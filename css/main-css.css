@@ -1,0 +1,142 @@
+#Yukari{
+    position:fixed;
+    left:94%;
+    bottom:0;
+}
+
+.my-overlay {
+    background: #000;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 11000;
+    opacity: .5;
+}
+.my-visible {
+    background: #fff;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    margin-top: -200px;
+    max-height: 500px;
+    overflow: scroll;
+    z-index: 30000;
+    width: 500px;
+    padding: 0px;
+    margin-left: -250px;
+}
+#changelog button {
+    float: right;
+    line-height: 20px;
+    margin: 1.2em;
+    border: none;
+    background: transparent;
+    color: blue;
+}
+#changelog button[type="button"]:hover {
+    cursor: pointer;
+    color: navy;
+    text-decoration: underline;
+}
+#changelog h3 {
+    text-align: center;
+    color: #555;
+}
+.my-content {
+    padding: 0 1em;
+    border-top: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+    background: WhiteSmoke;
+}
+.item{
+    display:inline;
+}
+.linker{
+    background:white;
+    width: auto;
+    height: auto;
+    border-radius:5px;
+    position:fixed;
+    z-index: 10000;
+}
+.linker-item{
+    margin-top:2px;
+    background-color: #f4f4f4;
+}
+.settings-panel{
+    display:flex;
+    justify-content:flex-end;
+}
+.linker-header{
+    cursor: move;
+    display:flex;
+    background: #8ac858;
+    border-radius: 5px;
+    padding: 3px;
+}
+.panel-name{
+    width: 100%;
+
+}
+.linker-header button{
+    border-radius:100%;
+    margin-right: 5px;
+    text-align: center;
+    background-color:white;
+    border:1px solid;
+    border-color:#f4f4f4;
+    line-height: 0;
+    padding: 1px 7px;
+}
+.my-spoiler{
+    padding: 2px;
+    width: 220px;
+    overflow: hidden;
+    min-height: fit-content;
+    max-height: fit-content;
+    min-width: 200px;
+    background: white;
+
+}
+
+.linker table{
+    margin: 0 auto;
+    border:1px solid;
+    border-color:#f4f4f4;
+
+
+}
+a.item {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    display: block;
+}
+.my-link{
+    display: flex;
+}
+.iqdb .my-spoiler{
+    height: 400px;
+    width: 220px;
+    overflow-y: auto;
+    overflow-x:hidden;
+    max-height: fit-content;
+    min-height: 0;
+}
+#UpdateTagsB{
+    width: 100%;
+    text-align: center;
+}
+#getTags{
+    width: 100%;
+    text-align: center;
+}
+#DanbooruUrl{
+    width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    display: block;
+}
