@@ -1,6 +1,6 @@
 {
     "manifest_version": 2,
-    "name": "Pikabu+",   
+    "name": "SPFP",
     "version": "0.9.5",
 	"web_accessible_resources":["*.png","*.jpg","*.css"],
     "icons": {
@@ -18,8 +18,10 @@
     ],
 
     "background": {
-        "scripts": ["background.js"],
-        "persistent": false
+        "scripts": [
+          "jquery-3.3.1.min.js",
+          "background.js"
+        ]
     },
 
     "content_scripts":[{
@@ -28,17 +30,15 @@
             "https://pikabu.ru/*"
         ],
         "js": [
-            "pikabu.js",
-            "jquery-3.3.1.min.js",
-            "jquery-ui.min.js"
-
+          "jquery-3.3.1.min.js",
+          "pikabu.js"
         ]
 
 
     }],
 
     "browser_action": {
-        "default_title": "Pikabu+",
+        "default_title": "SPFP",
         "default_icon" : "./icon.png",
         "default_popup": "popup.html"    
     }
