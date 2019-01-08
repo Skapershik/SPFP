@@ -1,5 +1,6 @@
 ﻿$(document).ready(main_function());
-
+let iqdb_url = 'http://danbooru.iqdb.org/?url=';
+let min_similarity = 80;
 /*
    00 Post Page
    01 Add Post page
@@ -23,91 +24,128 @@ function main_function() {
         case 2:
             break;
     }
-    events_controller();
+    events_controller(page_type());
 }
 
-function events_controller() {
-    $('#art_get_danbooru').on('click', function (ev) {
-        let url = $('#art_danbooru_url').val();
-        console.log(url);
-        chrome.runtime.sendMessage(JSON.stringify({'type': 'get', 'url': url}), function (response) {
-            if (response.source != undefined) {
-                $('#art_source').show();
-                let name = Object.keys(link_handler(response.source))[0]
-                let href = link_handler(response.source)[name]
-                $('<a>', {href: href, text: name}).appendTo('#art_source');
-            }
-            if (response.tag_string_copyright != undefined) {
-                $('#art_copyrights').show();
-                let copyright_arr = response.tag_string_copyright.split(' ');
-                for (var i = 0; i < copyright_arr.length; i++) {
-                    $('<span>', {
-                        class: 'tag',
-                        text: copyright_arr[i].replace(/\_/ig, " ")
-                    }).appendTo('#art_copyrights');
+function events_controller(page) {
+    if (page == 1) {
+        $('#art_get_danbooru').on('click', function (ev) {
+            let url = $('#art_danbooru_url').val();
+            console.log(url);
+            chrome.runtime.sendMessage(JSON.stringify({'type': 'get', 'url': url}), function (response) {
+                if(response.toString().includes('Error')){
+                    window.alert('SPFP: Ошибка запроса на Danbooru. Проверьте доступность сайта или попробуйте включить proxy/vpn')
+                    return
                 }
-            }
-            if (response.tag_string_artist != undefined) {
-                $('#art_artists').show();
-                let artists_arr = response.tag_string_artist.split(' ');
-                for (var i = 0; i < artists_arr.length; i++) {
-                    $('<span>', {class: 'tag', text: artists_arr[i].replace(/\_/ig, " ")}).appendTo('#art_artists');
+                if (response.source != undefined) {
+                    $('#art_source').show();
+                    let name = Object.keys(link_handler(response.source))[0]
+                    let href = link_handler(response.source)[name]
+                    $('<a>', {href: href, text: name}).appendTo('#art_source');
                 }
-            }
-            if (response.tag_string_character != undefined) {
-                $('#art_characters').show();
-                let characters_arr = upper_case_names(response.tag_string_character.split(' '));
-                for (var i = 0; i < characters_arr.length; i++) {
-                    $('<span>', {
-                        class: 'tag',
-                        text: characters_arr[i].replace(/\_/ig, " ")
-                    }).appendTo('#art_characters');
+                if (response.tag_string_copyright != undefined) {
+                    $('#art_copyrights').show();
+                    let copyright_arr = response.tag_string_copyright.split(' ');
+                    for (var i = 0; i < copyright_arr.length; i++) {
+                        $('<span>', {
+                            class: 'tag',
+                            text: copyright_arr[i].replace(/\_/ig, " ")
+                        }).appendTo('#art_copyrights');
+                    }
                 }
-            }
-            $('#art_tags_helper .tag').on('click', function (ev) {
-                $('[data-role = "tags"] [type = "text"]').focus()
-                $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-                $('[data-role = "tags"] [type = "text"]').blur()
+                if (response.tag_string_artist != undefined) {
+                    $('#art_artists').show();
+                    let artists_arr = response.tag_string_artist.split(' ');
+                    for (var i = 0; i < artists_arr.length; i++) {
+                        $('<span>', {class: 'tag', text: artists_arr[i].replace(/\_/ig, " ")}).appendTo('#art_artists');
+                    }
+                }
+                if (response.tag_string_character != undefined) {
+                    $('#art_characters').show();
+                    let characters_arr = upper_case_names(response.tag_string_character.split(' '));
+                    for (var i = 0; i < characters_arr.length; i++) {
+                        $('<span>', {
+                            class: 'tag',
+                            text: characters_arr[i].replace(/\_/ig, " ")
+                        }).appendTo('#art_characters');
+                    }
+                }
+                $('#art_tags_helper .tag').on('click', function (ev) {
+                    $('[data-role = "tags"] [type = "text"]').focus()
+                    $('[data-role = "tags"] [type = "text"]').val(this.textContent)
+                    $('[data-role = "tags"] [type = "text"]').blur()
+                })
+                $('#art_main_panel').addClass('input');
+                duplicate_remover('#art_tags_helper .tag');
+                duplicate_remover('#art_tags_helper a');
             })
-            $('#art_main_panel').addClass('input');
-            duplicate_remover('#art_tags_helper .tag');
-            duplicate_remover('#art_tags_helper a');
         })
-    })
-    //Нужно изменить, не нравится мне как это выглядит
-    if ($('.tags__tag')[0] != undefined) {
-        $('.tags__tag').on('click', function (ev) {
-            $('[data-role = "tags"] [type = "text"]').focus()
-            $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-            $('[data-role = "tags"] [type = "text"]').blur()
+        $('#art_tags_helper i').on('mouseover', function () {
+            $('#art_help').show(1000)
         })
-        $('.tags__tag').clone(true).appendTo('#art_community_tags')
-        duplicate_remover('#art_tags_helper .tags__tag')
-        $('#art_community_tags').show()
-    } else {
-        $(document).on('click', function () {
+        $('#art_tags_helper i').on('mouseout', function () {
+            $('#art_help').hide(1000)
+        })
+        dynamic_content_controller()
+    }
+
+}
+
+function dynamic_content_controller() {
+    $('label:contains(" Опубликовать в сообществе")').off('click')
+    $('.story-editor-block__content img').off('click')
+    $('.story-editor-block__content canvas').off('click')
+    $('input[type="file"]').off('change')
+        let interval_comm_tags = setInterval(function () {
+            if ($('.community__tags.tags')[0] == undefined) return;
+            clearInterval(interval_comm_tags)
             $('.tags__tag').on('click', function (ev) {
                 $('[data-role = "tags"] [type = "text"]').focus()
                 $('[data-role = "tags"] [type = "text"]').val(this.textContent)
                 $('[data-role = "tags"] [type = "text"]').blur()
             })
             $('.tags__tag').clone(true).appendTo('#art_community_tags')
-            if ($('#art_tags_helper .tags__tag').length > 0) {
-                duplicate_remover('#art_tags_helper .tags__tag')
-                $('#art_community_tags').show()
-            }
+            duplicate_remover('#art_community_tags .tags__tag')
+            $('#art_community_tags').show()
+            $('label:contains(" Опубликовать в сообществе")').on('click', function () {
+                $(".community__tags.tags").remove();
+                $('#art_community_tags').hide()
+                $("#art_community_tags .tags__tag").remove()
+                dynamic_content_controller()
+            })
+        }, 1000)
+    let interval_post = setInterval(function () {
+        if ($('.story-editor-block__content')[0] == undefined) return;
+        clearInterval(interval_post)
+        $('.story-editor-block__content img').css({'cursor':'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            chrome.runtime.sendMessage(JSON.stringify({'type' : 'get', 'url' : iqdb_url+this.src}), function (response) {
+                process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
+            })
         })
-    }
+        $('.story-editor-block__content canvas').css({'cursor':'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            chrome.runtime.sendMessage(JSON.stringify({'type' : 'post', 'url' : iqdb_url, 'data':{'img':this.toDataURL("image/png")}}), function (response) {
+                if(response.includes('Error! File too large')){
+                    window.alert(`SPFP: Ошибка! Изображение больше 8192 KB`)
+                }else{
+                    process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
+                }
+            })
+        })
+        $('input[type="file"]').on('change', dynamic_content_controller)
+    }, 1000)
 
 }
 
 //Избавляемся от дубликатов
-function duplicate_remover(selector, mode) {
+function duplicate_remover(selector) {
     let tag_text = '',
         tag_list = $(selector),
         list_for_remove = [];
     $(tag_list).each(function () {
         let text = $(this).text();
+        if(selector.includes('#art_tags_helper a')){
+           text = $(this).attr('href');
+        }
         if (tag_text.indexOf('|' + text + '|') == -1)
             tag_text += '|' + text + '|';
         else
@@ -116,6 +154,22 @@ function duplicate_remover(selector, mode) {
     $(list_for_remove).each(function () {
         $(this).remove();
     });
+}
+
+function process_iqdb_response(response){
+    let href = $(response).find('th:contains("Best match")').parents('table').find('a').attr('href')
+    let similarity = parseInt($(response).find('th:contains("Best match")').parents('table').find('td:contains("similarity")').text())
+    if(href!=undefined && similarity>min_similarity){
+$('#art_danbooru_url').val('https:'+href);
+$('#art_get_danbooru').click()
+    }else {
+        if(href==undefined){
+            window.alert(`SPFP: Арт не найден :(`)
+        }
+        else if(similarity<min_similarity){
+            window.alert(`SPFP: Процент сходства найденного арта слишком низкий:${similarity}%`)
+        }
+    }
 }
 
 //Делаем Имя и Фамилию с большой буквы, передаем массив персонажей
@@ -139,7 +193,7 @@ function link_handler(url) {
     } else if (url.includes("twitter")) {
         complete_link['Twitter'] = url;
     } else {
-        complete_link[url] = url;
+        complete_link[url.split(/\//ig)[2]] = url;
     }
     return complete_link
 }
@@ -149,11 +203,14 @@ function tags_helper_template() {
     <section>
         <p>
             <label>Tags Helper</label>
+            <i class="fa fa-question-circle" aria-hidden="true" style="cursor:pointer"></i>
         </p>
         <p class="story-editor__meta-hint" id="art_help" style="display:none">
-            Содержание поста создано вами.<br>
-            Например, вы сделали эту фотографию<br>
-            или написали данный рассказ.
+            Это окно создано расширением SPFP<br>
+            Для использования введите ссылку на Danbooru и нажмите "Сделать запрос"<br>
+            Или нажмите на необходимое изображение, чтобы отправить его на IQDB<br>
+            В случае успешного запроса расширение создаст конструктор тегов.<br>
+            Чтобы выбрать тег - нажмите на него.            
         </p>
         <p>
             <section class="input input_section input_tags">
