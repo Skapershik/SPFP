@@ -80,6 +80,7 @@ chrome.runtime.onMessage.addListener(
                 data.append("file", dataURItoBlob(request['data'].img), 'image');
                 data.append("MAX_FILE_SIZE", '8388608');
                 if (dataURItoBlob(request['data'].img).size > 8388608) {
+                    console.log('Error! File too large ', dataURItoBlob(request['data'].img).size)
                     sendResponse('Error! File too large')
                 } else {
                     post(request['url'], data).then(

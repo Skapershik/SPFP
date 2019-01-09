@@ -1,6 +1,7 @@
 ﻿$(document).ready(main_function());
 let iqdb_url = 'http://danbooru.iqdb.org/?url=';
 let min_similarity = 80;
+
 /*
    00 Post Page
    01 Add Post page
@@ -33,7 +34,7 @@ function events_controller(page) {
             let url = $('#art_danbooru_url').val();
             console.log(url);
             chrome.runtime.sendMessage(JSON.stringify({'type': 'get', 'url': url}), function (response) {
-                if(response.toString().includes('Error')){
+                if (response.toString().includes('Error')) {
                     window.alert('SPFP: Ошибка запроса на Danbooru. Проверьте доступность сайта или попробуйте включить proxy/vpn')
                     return
                 }
@@ -41,7 +42,7 @@ function events_controller(page) {
                     $('#art_source').show();
                     let name = Object.keys(link_handler(response.source))[0]
                     let href = link_handler(response.source)[name]
-                    $('<a>', {href: href, text: name}).appendTo('#art_source');
+                    $('<a>', {href: href, text: name, style:'margin-right: 15px;'}).appendTo('#art_source');
                 }
                 if (response.tag_string_copyright != undefined) {
                     $('#art_copyrights').show();
@@ -57,7 +58,17 @@ function events_controller(page) {
                     $('#art_artists').show();
                     let artists_arr = response.tag_string_artist.split(' ');
                     for (var i = 0; i < artists_arr.length; i++) {
+                        if (artists_arr[i].split('_(').length > 1) {
+                            $('#art_complex_tag').show()
+                            for (var j = 0; j < artists_arr[i].split('_(').length; j++) {
+                                $('<span>', {
+                                    class: 'tag',
+                                    text: artists_arr[i].split('_(')[j].replace(/\_/ig, " ").replace(')', '')
+                                }).appendTo('#art_complex_tag');
+                            }
+                        }
                         $('<span>', {class: 'tag', text: artists_arr[i].replace(/\_/ig, " ")}).appendTo('#art_artists');
+
                     }
                 }
                 if (response.tag_string_character != undefined) {
@@ -66,7 +77,7 @@ function events_controller(page) {
                     for (var i = 0; i < characters_arr.length; i++) {
                         $('<span>', {
                             class: 'tag',
-                            text: characters_arr[i].replace(/\_/ig, " ")
+                            text: characters_arr[i].split('_(')[0].replace(/\_/ig, " ")
                         }).appendTo('#art_characters');
                     }
                 }
@@ -76,6 +87,15 @@ function events_controller(page) {
                     $('[data-role = "tags"] [type = "text"]').blur()
                 })
                 $('#art_main_panel').addClass('input');
+                $('#art_clear').show()
+                $('#art_clear').on('click', function () {
+                    $('#art_tags_helper .tag').parent().hide()
+                    $('#art_tags_helper a').parent().hide()
+                    $('#art_tags_helper .tag').remove()
+                    $('#art_tags_helper a').remove()
+                    $('#art_danbooru_url').val('')
+                    $('#art_clear').hide()
+                })
                 duplicate_remover('#art_tags_helper .tag');
                 duplicate_remover('#art_tags_helper a');
             })
@@ -96,37 +116,44 @@ function dynamic_content_controller() {
     $('.story-editor-block__content img').off('click')
     $('.story-editor-block__content canvas').off('click')
     $('input[type="file"]').off('change')
-        let interval_comm_tags = setInterval(function () {
-            if ($('.community__tags.tags')[0] == undefined) return;
-            clearInterval(interval_comm_tags)
-            $('.tags__tag').on('click', function (ev) {
-                $('[data-role = "tags"] [type = "text"]').focus()
-                $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-                $('[data-role = "tags"] [type = "text"]').blur()
-            })
-            $('.tags__tag').clone(true).appendTo('#art_community_tags')
-            duplicate_remover('#art_community_tags .tags__tag')
-            $('#art_community_tags').show()
-            $('label:contains(" Опубликовать в сообществе")').on('click', function () {
-                $(".community__tags.tags").remove();
-                $('#art_community_tags').hide()
-                $("#art_community_tags .tags__tag").remove()
-                dynamic_content_controller()
-            })
-        }, 1000)
+    let interval_comm_tags = setInterval(function () {
+        if ($('.community__tags.tags')[0] == undefined) return;
+        clearInterval(interval_comm_tags)
+        $('.tags__tag').on('click', function (ev) {
+            $('[data-role = "tags"] [type = "text"]').focus()
+            $('[data-role = "tags"] [type = "text"]').val(this.textContent)
+            $('[data-role = "tags"] [type = "text"]').blur()
+        })
+        $('.tags__tag').clone(true).appendTo('#art_community_tags')
+        duplicate_remover('#art_community_tags .tags__tag')
+        $('#art_community_tags').show()
+        $('label:contains(" Опубликовать в сообществе")').on('click', function () {
+            $(".community__tags.tags").remove();
+            $('#art_community_tags').hide()
+            $("#art_community_tags .tags__tag").remove()
+            dynamic_content_controller()
+        })
+    }, 1000)
     let interval_post = setInterval(function () {
         if ($('.story-editor-block__content')[0] == undefined) return;
         clearInterval(interval_post)
-        $('.story-editor-block__content img').css({'cursor':'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
-            chrome.runtime.sendMessage(JSON.stringify({'type' : 'get', 'url' : iqdb_url+this.src}), function (response) {
+        $('.story-editor-block__content img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            chrome.runtime.sendMessage(JSON.stringify({
+                'type': 'get',
+                'url': iqdb_url + this.src
+            }), function (response) {
                 process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
             })
         })
-        $('.story-editor-block__content canvas').css({'cursor':'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
-            chrome.runtime.sendMessage(JSON.stringify({'type' : 'post', 'url' : iqdb_url, 'data':{'img':this.toDataURL("image/png")}}), function (response) {
-                if(response.includes('Error! File too large')){
+        $('.story-editor-block__content canvas').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            chrome.runtime.sendMessage(JSON.stringify({
+                'type': 'post',
+                'url': iqdb_url,
+                'data': {'img': canvasToImage(this)}
+            }), function (response) {
+                if (response.includes('Error! File too large')) {
                     window.alert(`SPFP: Ошибка! Изображение больше 8192 KB`)
-                }else{
+                } else {
                     process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
                 }
             })
@@ -136,6 +163,34 @@ function dynamic_content_controller() {
 
 }
 
+function canvasToImage(canvas) {
+    var context = canvas.getContext('2d');
+//cache height and width
+    var w = canvas.width;
+    var h = canvas.height;
+    var data;
+//get the current ImageData for the canvas.
+    data = context.getImageData(0, 0, w, h);
+//store the current globalCompositeOperation
+    var compositeOperation = context.globalCompositeOperation;
+//set to draw behind current content
+    context.globalCompositeOperation = "destination-over";
+//set background color
+    context.fillStyle = '#fff';
+//draw background / rect on entire canvas
+    context.fillRect(0, 0, w, h);
+//get the image data from the canvas
+    var imageData = canvas.toDataURL("image/jpeg");
+//clear the canvas
+    context.clearRect(0, 0, w, h);
+//restore it with original / cached ImageData
+    context.putImageData(data, 0, 0);
+//reset the globalCompositeOperation to what it was
+    context.globalCompositeOperation = compositeOperation;
+//return the Base64 encoded data url string
+    return imageData;
+}
+
 //Избавляемся от дубликатов
 function duplicate_remover(selector) {
     let tag_text = '',
@@ -143,8 +198,8 @@ function duplicate_remover(selector) {
         list_for_remove = [];
     $(tag_list).each(function () {
         let text = $(this).text();
-        if(selector.includes('#art_tags_helper a')){
-           text = $(this).attr('href');
+        if (selector.includes('#art_tags_helper a')) {
+            text = $(this).attr('href');
         }
         if (tag_text.indexOf('|' + text + '|') == -1)
             tag_text += '|' + text + '|';
@@ -156,17 +211,17 @@ function duplicate_remover(selector) {
     });
 }
 
-function process_iqdb_response(response){
+function process_iqdb_response(response) {
     let href = $(response).find('th:contains("Best match")').parents('table').find('a').attr('href')
     let similarity = parseInt($(response).find('th:contains("Best match")').parents('table').find('td:contains("similarity")').text())
-    if(href!=undefined && similarity>min_similarity){
-$('#art_danbooru_url').val('https:'+href);
-$('#art_get_danbooru').click()
-    }else {
-        if(href==undefined){
+    if (href != undefined && similarity > min_similarity) {
+        $('#art_danbooru_url').val('https:' + href);
+        $('#art_get_danbooru').click()
+    } else {
+        if (href == undefined) {
             window.alert(`SPFP: Арт не найден :(`)
         }
-        else if(similarity<min_similarity){
+        else if (similarity < min_similarity) {
             window.alert(`SPFP: Процент сходства найденного арта слишком низкий:${similarity}%`)
         }
     }
@@ -220,7 +275,7 @@ function tags_helper_template() {
                            style="width: 100%;position: relative;left: 0px;">
                 </div>
             </section>
-            <div class="collapse-button collapse-button_active" id="art_get_danbooru" style="width:auto;text-align: center;margin-left: 0px; margin-top: 10px" >
+            <div class="collapse-button collapse-button_active" id="art_get_danbooru" style="height:auto; width:auto;text-align: center;margin-left: 0px; margin-top: 10px" >
             Сделать запрос
         </div>
         <div id="art_main_panel" style="display: block">
@@ -234,17 +289,18 @@ function tags_helper_template() {
         <p id="art_artists" style="display:none">
         <label>Художники:</label>
         </p>
+        <p id="art_complex_tag" style="display:none">
+        <label>Сложный тег:</label>
+        </p>
         <p id="art_characters" style="display:none">
         <label>Персонажи:</label>
         </p>
         <p id="art_community_tags" style="display:none">
         <label>Теги сообщества:</label>
         </p>
-        <section class="input input_section input_tags"style="margin-top: 0px; display:none">
-            <div class="input__box" id="art_tags">
-                <!--<span class="tag">Touhou</span>-->
-            </div>
-        </section>
+        <div class="collapse-button collapse-button_active" id="art_clear" style="height:auto;width:auto;text-align: center;margin-left: 0px; margin-top: 10px; display:none; " >
+            Очистить
+        </div>
         <div class="collapse-button collapse-button_active" style="width: auto;text-align: center; display:none" >
             Показать результат поиска IQDB
         </div>
