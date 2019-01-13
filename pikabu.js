@@ -1,7 +1,7 @@
 ﻿$(document).ready(main_function());
 let iqdb_url = 'http://danbooru.iqdb.org/?url=';
 let min_similarity = 80;
-
+var user_tags;
 /*
    00 Post Page
    01 Add Post page
@@ -29,6 +29,7 @@ function main_function() {
 }
 
 function events_controller(page) {
+    events_remover('#art_tags_helper')
     if (page == 1) {
         $('#art_get_danbooru').on('click', function (ev) {
             let url = $('#art_danbooru_url').val();
@@ -81,12 +82,32 @@ function events_controller(page) {
                         }).appendTo('#art_characters');
                     }
                 }
-                $('#art_tags_helper .tag').on('click', function (ev) {
-                    $('[data-role = "tags"] [type = "text"]').focus()
-                    $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-                    $('[data-role = "tags"] [type = "text"]').blur()
-                })
-                $('#art_main_panel').addClass('input');
+
+                /*chrome.runtime.onMessage.addListener(
+                    function (request, sender, sendResponse) {
+                        request = JSON.parse(request)
+                        console.log(request)
+                        if(request.action=='update_tags'){
+                            if(request.tags!=undefined){
+                                $('#art_personal_tags').show()
+                                let tags_arr = request.tags.split(' ')
+                                for (var i = 0;i<tags_arr.length;i++){
+                                    $('<span>', {
+                                        class: 'tag',
+                                        text: tags_arr[i].replace(/\_/ig, " ")
+                                    }).appendTo('#art_personal_tags');
+                                }
+                            } else{
+                                $('#art_personal_tags').hide()
+                                $('#art_personal_tags .tag').remove()
+                            }
+
+                        }
+                        return true;
+                    })*/
+
+
+
                 $('#art_clear').show()
                 $('#art_clear').on('click', function () {
                     $('#art_tags_helper .tag').parent().hide()
@@ -100,13 +121,51 @@ function events_controller(page) {
                 duplicate_remover('#art_tags_helper a');
             })
         })
+        user_tags = localStorage.getItem('art_user_tags');
+        if(user_tags!=undefined && user_tags!=''){
+            $('#art_user_tags').show()
+            let tags_arr = user_tags.split(' ')
+            for (var i = 0;i<tags_arr.length;i++){
+                $('<span>', {
+                    class: 'tags__tag',
+                    text: tags_arr[i].replace(/\_/ig, " ")
+                }).appendTo('#art_user_tags');
+            }
+        }
+        $('#art_add_user_tags').on('click', function () {
+            $('#art_user_tags').show()
+            $('#art_user_tags .tags__tag').remove()
+            $('#art_user_tags input').remove()
+            $('<input>', {
+                class: 'input__input input__input_carriage',
+                id: 'art_user_input',
+                style:'border: 1px solid var(--color--gray);',
+                placeholder:'Введите теги в формате: Тег1_тег1 тег2_тег2',
+            }).appendTo('#art_user_tags');
+            $('#art_user_input').val(user_tags)
+            $('#art_add_user_tags').off('click')
+            $('#art_add_user_tags').on('click',function () {
+                user_tags = $('#art_user_input').val()
+                localStorage.setItem('art_user_tags', user_tags)
+                $('#art_user_tags').hide()
+                $('#art_user_input').remove()
+                $('#art_add_user_tags').off('click')
+                events_controller(page)
+            })
+        })
         $('#art_tags_helper i').on('mouseover', function () {
             $('#art_help').show(1000)
         })
         $('#art_tags_helper i').on('mouseout', function () {
             $('#art_help').hide(1000)
         })
+        $('#art_tags_helper .tag').on('click', function (ev) {
+            $('[data-role = "tags"] [type = "text"]').focus()
+            $('[data-role = "tags"] [type = "text"]').val(this.textContent)
+            $('[data-role = "tags"] [type = "text"]').blur()
+        })
         dynamic_content_controller()
+
     }
 
 }
@@ -211,6 +270,15 @@ function duplicate_remover(selector) {
     });
 }
 
+function events_remover(selector) {
+    $(`${selector} span`).each(function () {
+        $(this).off()
+    })
+    $(`${selector} .collapse-button`).each(function () {
+        $(this).off()
+    })
+}
+
 function process_iqdb_response(response) {
     let href = $(response).find('th:contains("Best match")').parents('table').find('a').attr('href')
     let similarity = parseInt($(response).find('th:contains("Best match")').parents('table').find('td:contains("similarity")').text())
@@ -267,7 +335,6 @@ function tags_helper_template() {
             В случае успешного запроса расширение создаст конструктор тегов.<br>
             Чтобы выбрать тег - нажмите на него.            
         </p>
-        <p>
             <section class="input input_section input_tags">
                 <div class="input__box">
                     <input class="input__input input__input_carriage" id="art_danbooru_url" type="text"
@@ -278,8 +345,8 @@ function tags_helper_template() {
             <div class="collapse-button collapse-button_active" id="art_get_danbooru" style="height:auto; width:auto;text-align: center;margin-left: 0px; margin-top: 10px" >
             Сделать запрос
         </div>
-        <div id="art_main_panel" style="display: block">
-        </p>
+        
+        <div id="art_main_panel" class="input" style="display: block">
         <p id="art_source" style="display:none">
             <label>Источник:</label>
         </p>
@@ -298,14 +365,15 @@ function tags_helper_template() {
         <p id="art_community_tags" style="display:none">
         <label>Теги сообщества:</label>
         </p>
+        <p id="art_user_tags" style="display:none">
+        <label>Пользовательские теги:</label>
+        </p>
+        <div class="collapse-button collapse-button_active" id="art_add_user_tags" style="height:auto;width:auto;text-align: center;margin-left: 0px; margin-top: 10px; " >
+            Добавить пользовательские теги
+        </div>
         <div class="collapse-button collapse-button_active" id="art_clear" style="height:auto;width:auto;text-align: center;margin-left: 0px; margin-top: 10px; display:none; " >
             Очистить
         </div>
-        <div class="collapse-button collapse-button_active" style="width: auto;text-align: center; display:none" >
-            Показать результат поиска IQDB
-        </div>
-        <p id="art_iqdb"></p>
-        <p></p>
         </div>
     </section>
 </div>`
