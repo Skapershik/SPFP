@@ -155,7 +155,7 @@ function events_controller(page) {
             $('#art_add_user_tags').text('Сохранить пользовательские теги')
             $('#art_add_user_tags').on('click',function () {
                 user_tags = $('#art_user_input').val()
-                $('#art_add_user_tags').text('Добавить пользовательские теги')
+                $('#art_add_user_tags').text('Изменить пользовательские теги')
                 localStorage.setItem('art_user_tags', user_tags)
                 $('#art_user_tags').hide()
                 $('#art_user_input').remove()
@@ -401,10 +401,19 @@ function tags_helper_template() {
         <p id="art_user_tags" style="display:none">
         <label>Пользовательские теги:</label>
         </p>
-        <div class="collapse-button collapse-button_active" id="art_add_user_tags" style="height:auto;width:auto;text-align: center;margin-left: 0px; margin-top: 10px; " >
-            Добавить пользовательские теги
+        <div class="collapse-button collapse-button_active" id="art_add_user_tags" style="width: auto;
+    line-height: normal;
+    text-align: center;
+    margin-left: 0px;
+    margin-top: 10px;" >
+            Изменить пользовательские теги
         </div>
-        <div class="collapse-button collapse-button_active" id="art_clear" style="height:auto;width:auto;text-align: center;margin-left: 0px; margin-top: 10px; display:none; " >
+        <div class="collapse-button collapse-button_active" id="art_clear" style="
+    width: auto;
+    line-height: normal;
+    text-align: center;
+    margin-left: 0px;
+    margin-top: 10px; display:none; " >
             Очистить
         </div>
         </div>
