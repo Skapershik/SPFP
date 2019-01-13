@@ -42,7 +42,7 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="html" value="405" />
-          <entry key="js" value="6830" />
+          <entry key="js" value="6934" />
           <entry key="json" value="37" />
           <entry key="template" value="1" />
         </counts>
@@ -51,7 +51,7 @@
         <counts>
           <entry key="HTML" value="430" />
           <entry key="JSON" value="37" />
-          <entry key="JavaScript" value="6805" />
+          <entry key="JavaScript" value="6909" />
           <entry key="PLAIN_TEXT" value="1" />
         </counts>
       </usages-collector>
@@ -80,8 +80,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/pikabu.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="299">
-              <caret line="292" lean-forward="true" selection-start-line="292" selection-end-line="292" />
+            <state relative-caret-position="435">
+              <caret line="155" column="54" lean-forward="true" selection-start-line="155" selection-start-column="54" selection-end-line="155" selection-end-column="54" />
               <folding>
                 <element signature="n#style#0;n#section#0;n#!!top" expanded="true" />
                 <element signature="n#!!block;n#canvasToImage#0" />
@@ -258,12 +258,12 @@
       <workItem from="1547203136298" duration="1204000" />
       <workItem from="1547311175891" duration="3960000" />
       <workItem from="1547375309425" duration="7737000" />
-      <workItem from="1547387768246" duration="2397000" />
+      <workItem from="1547387768246" duration="3256000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="175214000" />
+    <option name="totallyTimeSpent" value="176073000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
@@ -371,8 +371,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/pikabu.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="299">
-          <caret line="292" lean-forward="true" selection-start-line="292" selection-end-line="292" />
+        <state relative-caret-position="435">
+          <caret line="155" column="54" lean-forward="true" selection-start-line="155" selection-start-column="54" selection-end-line="155" selection-end-column="54" />
           <folding>
             <element signature="n#style#0;n#section#0;n#!!top" expanded="true" />
             <element signature="n#!!block;n#canvasToImage#0" />

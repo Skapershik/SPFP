@@ -151,8 +151,10 @@ function events_controller(page) {
             }).appendTo('#art_user_tags');
             $('#art_user_input').val(user_tags)
             $('#art_add_user_tags').off('click')
+            $('#art_add_user_tags').text('Сохранить пользовательские теги')
             $('#art_add_user_tags').on('click',function () {
                 user_tags = $('#art_user_input').val()
+                $('#art_add_user_tags').text('Добавить пользовательские теги')
                 localStorage.setItem('art_user_tags', user_tags)
                 $('#art_user_tags').hide()
                 $('#art_user_input').remove()
@@ -183,6 +185,7 @@ function dynamic_content_controller() {
     $('.story-editor-block__content canvas').off('click')
     $('input[type="file"]').off('change')
     let interval_comm_tags = setInterval(function () {
+        console.log("interval_comm_tags", interval_comm_tags)
         if ($('.community__tags.tags')[0] == undefined) return;
         clearInterval(interval_comm_tags)
         $('.tags__tag').on('click', function (ev) {
@@ -190,7 +193,7 @@ function dynamic_content_controller() {
             $('[data-role = "tags"] [type = "text"]').val(this.textContent)
             $('[data-role = "tags"] [type = "text"]').blur()
         })
-        $('.tags__tag').clone(true).appendTo('#art_community_tags')
+        $('.form__field .tags__tag').clone(true).appendTo('#art_community_tags')
         duplicate_remover('#art_community_tags .tags__tag')
         $('#art_community_tags').show()
         $('label:contains(" Опубликовать в сообществе")').on('click', function () {
@@ -201,6 +204,7 @@ function dynamic_content_controller() {
         })
     }, 1000)
     let interval_post = setInterval(function () {
+        console.log("interval_comm_tags", interval_post)
         if ($('.story-editor-block__content')[0] == undefined) return;
         clearInterval(interval_post)
         $('.story-editor-block__content img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
