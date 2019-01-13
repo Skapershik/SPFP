@@ -21,11 +21,12 @@ function main_function() {
             break;
         case 1:
             $(tags_helper_template()).insertAfter('.story-editor__blocks')
+            dynamic_content_controller()
+            events_controller(page_type());
             break;
         case 2:
             break;
     }
-    events_controller(page_type());
 }
 
 function events_controller(page) {
@@ -173,8 +174,11 @@ function events_controller(page) {
             $('[data-role = "tags"] [type = "text"]').val(this.textContent)
             $('[data-role = "tags"] [type = "text"]').blur()
         })
-        dynamic_content_controller()
-
+        $('.tags__tag').on('click', function (ev) {
+            $('[data-role = "tags"] [type = "text"]').focus()
+            $('[data-role = "tags"] [type = "text"]').val(this.textContent)
+            $('[data-role = "tags"] [type = "text"]').blur()
+        })
     }
 
 }
@@ -207,36 +211,40 @@ function dynamic_content_controller() {
         console.log("interval_comm_tags", interval_post)
         if ($('.story-editor-block__content')[0] == undefined) return;
         clearInterval(interval_post)
-        $('.story-editor-block__content img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
-            $('#art_tags_helper').children().hide()
-            $(status_update()).insertAfter('#art_tags_helper')
-            chrome.runtime.sendMessage(JSON.stringify({
-                'type': 'get',
-                'url': iqdb_url + this.src
-            }), function (response) {
-                $('#art_tags_helper').children().show()
+        setTimeout(function () {
+            $('.story-editor-block__content img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
                 $('#art_query_status').remove()
-                process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
-            })
-        })
-        $('.story-editor-block__content canvas').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
-            $('#art_tags_helper').children().hide()
-            $(status_update()).insertAfter('#art_tags_helper')
-            chrome.runtime.sendMessage(JSON.stringify({
-                'type': 'post',
-                'url': iqdb_url,
-                'data': {'img': canvasToImage(this)}
-            }), function (response) {
-                $('#art_tags_helper').children().show()
-                $('#art_query_status').remove()
-                if (response.includes('Error! File too large')) {
-                    window.alert(`SPFP: Ошибка! Изображение больше 8192 KB`)
-                } else {
+                $('#art_tags_helper').children().hide()
+                $(status_update()).insertAfter('#art_tags_helper')
+                chrome.runtime.sendMessage(JSON.stringify({
+                    'type': 'get',
+                    'url': iqdb_url + this.src
+                }), function (response) {
+                    $('#art_tags_helper').children().show()
+                    $('#art_query_status').remove()
                     process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
-                }
+                })
             })
-        })
-        $('input[type="file"]').on('change', dynamic_content_controller)
+            $('.story-editor-block__content canvas').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+                $('#art_query_status').remove()
+                $('#art_tags_helper').children().hide()
+                $(status_update()).insertAfter('#art_tags_helper')
+                chrome.runtime.sendMessage(JSON.stringify({
+                    'type': 'post',
+                    'url': iqdb_url,
+                    'data': {'img': canvasToImage(this)}
+                }), function (response) {
+                    $('#art_tags_helper').children().show()
+                    $('#art_query_status').remove()
+                    if (response.includes('Error! File too large')) {
+                        window.alert(`SPFP: Ошибка! Изображение больше 8192 KB`)
+                    } else {
+                        process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
+                    }
+                })
+            })
+            $('input[type="file"]').on('change', dynamic_content_controller)
+        },100)
     }, 1000)
 
     function status_update() {
