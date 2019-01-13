@@ -34,7 +34,10 @@ function events_controller(page) {
         $('#art_get_danbooru').on('click', function (ev) {
             let url = $('#art_danbooru_url').val();
             console.log(url);
+            $('#art_get_danbooru').text('')
+            $('<img>', {src: "https://cs.pikabu.ru/apps/desktop/1.18.0/animations/stories-spinner.png", class: "player__apng"}).appendTo('#art_get_danbooru');
             chrome.runtime.sendMessage(JSON.stringify({'type': 'get', 'url': url}), function (response) {
+                $('#art_get_danbooru').text('Сделать запрос').children().remove()
                 if (response.toString().includes('Error')) {
                     window.alert('SPFP: Ошибка запроса на Danbooru. Проверьте доступность сайта или попробуйте включить proxy/vpn')
                     return
@@ -82,7 +85,11 @@ function events_controller(page) {
                         }).appendTo('#art_characters');
                     }
                 }
-
+                $('#art_tags_helper .tag').on('click', function (ev) {
+                    $('[data-role = "tags"] [type = "text"]').focus()
+                    $('[data-role = "tags"] [type = "text"]').val(this.textContent)
+                    $('[data-role = "tags"] [type = "text"]').blur()
+                })
                 /*chrome.runtime.onMessage.addListener(
                     function (request, sender, sendResponse) {
                         request = JSON.parse(request)
@@ -197,19 +204,27 @@ function dynamic_content_controller() {
         if ($('.story-editor-block__content')[0] == undefined) return;
         clearInterval(interval_post)
         $('.story-editor-block__content img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            $('#art_tags_helper').children().hide()
+            $(status_update()).insertAfter('#art_tags_helper')
             chrome.runtime.sendMessage(JSON.stringify({
                 'type': 'get',
                 'url': iqdb_url + this.src
             }), function (response) {
+                $('#art_tags_helper').children().show()
+                $('#art_query_status').remove()
                 process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
             })
         })
         $('.story-editor-block__content canvas').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            $('#art_tags_helper').children().hide()
+            $(status_update()).insertAfter('#art_tags_helper')
             chrome.runtime.sendMessage(JSON.stringify({
                 'type': 'post',
                 'url': iqdb_url,
                 'data': {'img': canvasToImage(this)}
             }), function (response) {
+                $('#art_tags_helper').children().show()
+                $('#art_query_status').remove()
                 if (response.includes('Error! File too large')) {
                     window.alert(`SPFP: Ошибка! Изображение больше 8192 KB`)
                 } else {
@@ -220,7 +235,13 @@ function dynamic_content_controller() {
         $('input[type="file"]').on('change', dynamic_content_controller)
     }, 1000)
 
+    function status_update() {
+    return `<section style="text-align: center;" id="art_query_status">Делаем запрос на IQDB...<br>
+    <img class="player__apng" src="https://cs.pikabu.ru/apps/desktop/1.18.0/animations/stories-spinner.png">
+</section>`
+    }
 }
+
 
 function canvasToImage(canvas) {
     var context = canvas.getContext('2d');
