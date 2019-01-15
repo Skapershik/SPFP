@@ -75,6 +75,8 @@ function events_controller(page) {
                         $('<span>', {class: 'tag', text: artists_arr[i].replace(/\_/ig, " ")}).appendTo('#art_artists');
 
                     }
+                    $('#art_get_artist_names').show()
+
                 }
                 if (response.tag_string_character != undefined) {
                     $('#art_characters').show();
@@ -117,14 +119,6 @@ function events_controller(page) {
 
 
                 $('#art_clear').show()
-                $('#art_clear').on('click', function () {
-                    $('#art_tags_helper .tag').parent().hide()
-                    $('#art_tags_helper a').parent().hide()
-                    $('#art_tags_helper .tag').remove()
-                    $('#art_tags_helper a').remove()
-                    $('#art_danbooru_url').val('')
-                    $('#art_clear').hide()
-                })
                 duplicate_remover('#art_tags_helper .tag');
                 duplicate_remover('#art_tags_helper a');
             })
@@ -132,6 +126,7 @@ function events_controller(page) {
         user_tags = localStorage.getItem('art_user_tags');
         if(user_tags!=undefined && user_tags!=''){
             $('#art_user_tags').show()
+            $('#art_user_tags .tags__tag').remove()
             let tags_arr = user_tags.split(' ')
             for (var i = 0;i<tags_arr.length;i++){
                 $('<span>', {
@@ -140,6 +135,16 @@ function events_controller(page) {
                 }).appendTo('#art_user_tags');
             }
         }
+        $('#art_clear').on('click', function () {
+            $('#art_tags_helper .tag').parent().hide()
+            $('#art_tags_helper a').parent().hide()
+            $('#art_tags_helper .tag').remove()
+            $('#art_tags_helper a').remove()
+            $('#art_danbooru_url').val('')
+            $('#art_clear').hide()
+            $('#art_get_artist_names').hide()
+            $('.art_temp').remove()
+        })
         $('#art_add_user_tags').on('click', function () {
             $('#art_user_tags').show()
             $('#art_user_tags .tags__tag').remove()
@@ -161,6 +166,25 @@ function events_controller(page) {
                 $('#art_user_input').remove()
                 $('#art_add_user_tags').off('click')
                 events_controller(page)
+            })
+        })
+        $('#art_get_artist_names').on('click',function () {
+            $('.art_temp').remove()
+            $('#art_artists .tag').each(function () {
+                console.log($(this).text().replace(' ','_'))
+                let artist = $(this).text().replace(' ','_')
+                chrome.runtime.sendMessage(JSON.stringify({'type': 'get', 'url': `https://danbooru.donmai.us/artists.json?name=${$(this).text().replace(' ','_')}`}), function (response) {
+                    if(response[0].other_names!=undefined){
+                        $('<p>', {id: artist.split('_')[0], html:`<label>${artist}: </label>`, class:'art_temp' }).insertAfter('#art_artists');
+                    }
+                    for(var i = 0;i <response[0].other_names.length; i++ ){
+                        $('<span>', {
+                            class: 'tag',
+                            text: response[0].other_names[i]
+                        }).appendTo('#'+artist.split('_')[0]);
+                    }
+                    events_controller(page)
+                })
             })
         })
         $('#art_tags_helper i').on('mouseover', function () {
@@ -407,6 +431,14 @@ function tags_helper_template() {
     margin-left: 0px;
     margin-top: 10px;" >
             Изменить пользовательские теги
+        </div>
+        <div class="collapse-button collapse-button_active" id="art_get_artist_names" style="
+    width: auto;
+    line-height: normal;
+    text-align: center;
+    margin-left: 0px;
+    margin-top: 10px; display:none; " >
+            Загрузить подробную информацию о художниках
         </div>
         <div class="collapse-button collapse-button_active" id="art_clear" style="
     width: auto;
