@@ -2,6 +2,7 @@
 let iqdb_url = 'http://danbooru.iqdb.org/?url=';
 let min_similarity = 80;
 var user_tags;
+var timer;
 /*
    00 Post Page
    01 Add Post page
@@ -88,36 +89,8 @@ function events_controller(page) {
                         }).appendTo('#art_characters');
                     }
                 }
-                $('#art_tags_helper .tag').on('click', function (ev) {
-                    $('[data-role = "tags"] [type = "text"]').focus()
-                    $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-                    $('[data-role = "tags"] [type = "text"]').blur()
-                })
-                /*chrome.runtime.onMessage.addListener(
-                    function (request, sender, sendResponse) {
-                        request = JSON.parse(request)
-                        console.log(request)
-                        if(request.action=='update_tags'){
-                            if(request.tags!=undefined){
-                                $('#art_personal_tags').show()
-                                let tags_arr = request.tags.split(' ')
-                                for (var i = 0;i<tags_arr.length;i++){
-                                    $('<span>', {
-                                        class: 'tag',
-                                        text: tags_arr[i].replace(/\_/ig, " ")
-                                    }).appendTo('#art_personal_tags');
-                                }
-                            } else{
-                                $('#art_personal_tags').hide()
-                                $('#art_personal_tags .tag').remove()
-                            }
-
-                        }
-                        return true;
-                    })*/
-
-
-
+                tags_events()
+                link_events()
                 $('#art_clear').show()
                 duplicate_remover('#art_tags_helper .tag');
                 duplicate_remover('#art_tags_helper a');
@@ -193,18 +166,46 @@ function events_controller(page) {
         $('#art_tags_helper i').on('mouseout', function () {
             $('#art_help').hide(1000)
         })
-        $('#art_tags_helper .tag').on('click', function (ev) {
-            $('[data-role = "tags"] [type = "text"]').focus()
-            $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-            $('[data-role = "tags"] [type = "text"]').blur()
-        })
-        $('.tags__tag').on('click', function (ev) {
-            $('[data-role = "tags"] [type = "text"]').focus()
-            $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-            $('[data-role = "tags"] [type = "text"]').blur()
-        })
+        tags_events()
     }
-
+}
+function link_events() {
+    $('#art_tags_helper a').off()
+    $('#art_tags_helper a').on('click',function () {
+        $('[type="button"][data-role="text"]').click()
+        $('[data-name="desc"][role="textbox"] br').last().remove()
+        $('[data-name="desc"][role="textbox"]').last().click()
+        $(this).clone().removeAttr('style').appendTo($('[data-name="desc"][role="textbox"]').last().children())
+        $('[data-name="desc"][role="textbox"]').last().trigger("keydown", {which: 32});
+        $('[data-name="desc"][role="textbox"]').last().blur()
+        $('.app__inner').click()
+        return false
+    })
+}
+function tags_events() {
+    $('#art_tags_helper .tag').off()
+    $('.tags__tag').off()
+    $('#art_tags_helper .tag').on('click', function (ev) {
+        if (timer) clearTimeout(timer);
+        let tag = this.textContent
+        timer = setTimeout(function() {
+            $('[data-role = "tags"] [type = "text"]').focus()
+            $('[data-role = "tags"] [type = "text"]').val(tag)
+            $('[data-role = "tags"] [type = "text"]').blur()
+        }, 250);
+    })
+    $('.tags__tag').on('click', function (ev) {
+        $('[data-role = "tags"] [type = "text"]').focus()
+        $('[data-role = "tags"] [type = "text"]').val(this.textContent)
+        $('[data-role = "tags"] [type = "text"]').blur()
+    })
+    $('#art_tags_helper .tag').on('dblclick', function (ev) {
+        clearTimeout(timer)
+        $('[name="title"]').focus()
+        $('[name="title"]').text($('[name="title"]').text()+this.textContent)
+        $('[name="title"]').blur()
+        $('.app__inner').click()
+    })
 }
 
 function dynamic_content_controller() {
@@ -232,7 +233,7 @@ function dynamic_content_controller() {
         })
     }, 1000)
     let interval_post = setInterval(function () {
-        console.log("interval_comm_tags", interval_post)
+        console.log("interval_post", interval_post)
         if ($('.story-editor-block__content')[0] == undefined) return;
         clearInterval(interval_post)
         setTimeout(function () {
@@ -270,7 +271,6 @@ function dynamic_content_controller() {
             $('input[type="file"]').on('change', dynamic_content_controller)
         },100)
     }, 1000)
-
     function status_update() {
     return `<section style="text-align: center;" id="art_query_status">Делаем запрос на IQDB...<br>
     <img class="player__apng" src="https://cs.pikabu.ru/apps/desktop/1.18.0/animations/stories-spinner.png">
