@@ -44,13 +44,13 @@ function events_controller(page) {
                     window.alert('SPFP: Ошибка запроса на Danbooru. Проверьте доступность сайта или попробуйте включить proxy/vpn')
                     return
                 }
-                if (response.source != undefined) {
+                if (response.source) {
                     $('#art_source').show();
                     let name = Object.keys(link_handler(response.source))[0]
                     let href = link_handler(response.source)[name]
                     $('<a>', {href: href, text: name, style:'margin-right: 15px;'}).appendTo('#art_source');
                 }
-                if (response.tag_string_copyright != undefined) {
+                if (response.tag_string_copyright) {
                     $('#art_copyrights').show();
                     let copyright_arr = response.tag_string_copyright.split(' ');
                     for (var i = 0; i < copyright_arr.length; i++) {
@@ -60,7 +60,7 @@ function events_controller(page) {
                         }).appendTo('#art_copyrights');
                     }
                 }
-                if (response.tag_string_artist != undefined) {
+                if (response.tag_string_artist) {
                     $('#art_artists').show();
                     let artists_arr = response.tag_string_artist.split(' ');
                     for (var i = 0; i < artists_arr.length; i++) {
@@ -79,7 +79,7 @@ function events_controller(page) {
                     $('#art_get_artist_names').show()
 
                 }
-                if (response.tag_string_character != undefined) {
+                if (response.tag_string_character) {
                     $('#art_characters').show();
                     let characters_arr = upper_case_names(response.tag_string_character.split(' '));
                     for (var i = 0; i < characters_arr.length; i++) {
@@ -97,7 +97,7 @@ function events_controller(page) {
             })
         })
         user_tags = localStorage.getItem('art_user_tags');
-        if(user_tags!=undefined && user_tags!=''){
+        if(user_tags){
             $('#art_user_tags').show()
             $('#art_user_tags .tags__tag').remove()
             let tags_arr = user_tags.split(' ')
