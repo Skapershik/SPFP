@@ -1,8 +1,9 @@
 ﻿$(document).ready(main_function());
-let iqdb_url = 'http://danbooru.iqdb.org/?url=';
-let min_similarity = 80;
-var user_tags;
-var timer;
+//let iqdb_url = 'http://danbooru.iqdb.org/?url=';
+//let min_similarity = 80;
+//var user_tags='';
+let timer;
+var settings = {}
 /*
    00 Post Page
    01 Add Post page
@@ -14,6 +15,39 @@ function page_type() {
     else return 2;
     return -1;
 }
+function apply_settings(action, fields){
+    if(action=='load'){
+        $(fields).each(function () {
+            var field = $(this)
+            var key = field.attr('id')
+            console.log(key)
+            if(localStorage.getItem(key)){
+                settings[key.toString()] = localStorage.getItem(key)
+            }else {
+                settings[key.toString()] = get_default_value(key)
+            }
+            $(`#${key}`).val(settings[key])
+        })
+    }else if(action=='save'){
+        $(fields).each(function () {
+            settings[$(this).attr('id')]=$(this).val()
+            localStorage.setItem($(this).attr('id'),$(this).val())
+        })
+    }
+
+}
+
+function get_default_value(key) {
+    if(key=='settings_iqdb_url'){
+        return 'http://danbooru.iqdb.org/?url='
+    }else if(key=='settings_min_similarity'){
+        return '80'
+    }else if(key=='settings_user_tags'){
+        return ''
+    }else if(key=='settings_web_proxy'){
+        return ''
+    }
+}
 
 function main_function() {
     console.log("Loading...");
@@ -22,6 +56,7 @@ function main_function() {
             break;
         case 1:
             $(tags_helper_template()).insertAfter('.story-editor__blocks')
+            apply_settings('load',$('#art_settings_panel input'))
             dynamic_content_controller()
             events_controller(page_type());
             break;
@@ -37,7 +72,10 @@ function events_controller(page) {
             let url = $('#art_danbooru_url').val();
             console.log(url);
             $('#art_get_danbooru').text('')
-            $('<img>', {src: "https://cs.pikabu.ru/apps/desktop/1.18.0/animations/stories-spinner.png", class: "player__apng"}).appendTo('#art_get_danbooru');
+            $('<img>', {
+                src: "https://cs.pikabu.ru/apps/desktop/1.18.0/animations/stories-spinner.png",
+                class: "player__apng"
+            }).appendTo('#art_get_danbooru');
             chrome.runtime.sendMessage(JSON.stringify({'type': 'get', 'url': url}), function (response) {
                 $('#art_get_danbooru').text('Сделать запрос').children().remove()
                 if (response.toString().includes('Error')) {
@@ -48,7 +86,7 @@ function events_controller(page) {
                     $('#art_source').show();
                     let name = Object.keys(link_handler(response.source))[0]
                     let href = link_handler(response.source)[name]
-                    $('<a>', {href: href, text: name, style:'margin-right: 15px;'}).appendTo('#art_source');
+                    $('<a>', {href: href, text: name, style: 'margin-right: 15px;'}).appendTo('#art_source');
                 }
                 if (response.tag_string_copyright) {
                     $('#art_copyrights').show();
@@ -94,14 +132,17 @@ function events_controller(page) {
                 $('#art_clear').show()
                 duplicate_remover('#art_tags_helper .tag');
                 duplicate_remover('#art_tags_helper a');
+
             })
         })
+
         user_tags = localStorage.getItem('art_user_tags');
-        if(user_tags){
+        if (user_tags) {
             $('#art_user_tags').show()
             $('#art_user_tags .tags__tag').remove()
+            $('')
             let tags_arr = user_tags.split(' ')
-            for (var i = 0;i<tags_arr.length;i++){
+            for (var i = 0; i < tags_arr.length; i++) {
                 $('<span>', {
                     class: 'tags__tag',
                     text: tags_arr[i].replace(/\_/ig, " ")
@@ -118,43 +159,28 @@ function events_controller(page) {
             $('#art_get_artist_names').hide()
             $('.art_temp').remove()
         })
-        $('#art_add_user_tags').on('click', function () {
-            $('#art_user_tags').show()
-            $('#art_user_tags .tags__tag').remove()
-            $('#art_user_tags input').remove()
-            $('<input>', {
-                class: 'input__input input__input_carriage',
-                id: 'art_user_input',
-                style:'border: 1px solid var(--color--gray);',
-                placeholder:'Введите теги в формате: Тег1_тег1 тег2_тег2',
-            }).appendTo('#art_user_tags');
-            $('#art_user_input').val(user_tags)
-            $('#art_add_user_tags').off('click')
-            $('#art_add_user_tags').text('Сохранить пользовательские теги')
-            $('#art_add_user_tags').on('click',function () {
-                user_tags = $('#art_user_input').val()
-                $('#art_add_user_tags').text('Изменить пользовательские теги')
-                localStorage.setItem('art_user_tags', user_tags)
-                $('#art_user_tags').hide()
-                $('#art_user_input').remove()
-                $('#art_add_user_tags').off('click')
-                events_controller(page)
-            })
-        })
-        $('#art_get_artist_names').on('click',function () {
+
+        $('#art_get_artist_names').on('click', function () {
             $('.art_temp').remove()
             $('#art_artists .tag').each(function () {
-                console.log($(this).text().replace(/ /g,'_'))
+                console.log($(this).text().replace(/ /g, '_'))
                 let artist = $(this).text()
-                chrome.runtime.sendMessage(JSON.stringify({'type': 'get', 'url': `https://danbooru.donmai.us/artists.json?name=${$(this).text().replace(/ /g,'_')}`}), function (response) {
-                    if(response[0].other_names!=undefined){
-                        $('<p>', {id: artist.split(' ')[0], html:`<label>${artist}: </label>`, class:'art_temp' }).insertAfter('#art_artists');
+                chrome.runtime.sendMessage(JSON.stringify({
+                    'type': 'get',
+                    'url': `https://danbooru.donmai.us/artists.json?name=${$(this).text().replace(/ /g, '_')}`
+                }), function (response) {
+                    if (response[0].other_names != undefined) {
+                        $('<p>', {
+                            id: artist.split(' ')[0],
+                            html: `<label>${artist}: </label>`,
+                            class: 'art_temp'
+                        }).insertAfter('#art_artists');
                     }
-                    for(var i = 0;i <response[0].other_names.length; i++ ){
+                    for (var i = 0; i < response[0].other_names.length; i++) {
                         $('<span>', {
                             class: 'tag',
                             text: response[0].other_names[i].replace(/\_/ig, " ")
-                        }).appendTo('#'+artist.split(' ')[0]);
+                        }).appendTo('#' + artist.split(' ')[0]);
                     }
                     events_controller(page)
                 })
@@ -166,29 +192,41 @@ function events_controller(page) {
         $('#art_tags_helper i').on('mouseout', function () {
             $('#art_help').hide(1000)
         })
+        $('#art_settings_button').on('click', function () {
+            $('#art_settings_button').off()
+            $('#art_work_panel').hide()
+            $('#art_settings_panel').show()
+            $('#art_settings_button').on('click', function () {
+                $('#art_settings_button').off()
+                $('#art_work_panel').show()
+                $('#art_settings_panel').hide()
+                events_controller(page)
+            })
+        })
         tags_events()
     }
 }
+
 function link_events() {
     $('#art_tags_helper a').off()
-    $('#art_tags_helper a').on('click',function () {
+    $('#art_tags_helper a').on('click', function () {
         if (timer) clearTimeout(timer);
         let link = this
-        timer = setTimeout(function() {
-        $('[type="button"][data-role="text"]').click()
-        $('[data-name="desc"][role="textbox"] br').last().remove()
-        $(link).clone().off().removeAttr('style').appendTo($('[data-name="desc"][role="textbox"]').last().children())
-        $('[data-name="desc"][role="textbox"]').last().sendkeys(' ')
-        $('[data-name="desc"][role="textbox"]').last().blur()
-        $('.app__inner').click()
+        timer = setTimeout(function () {
+            $('[type="button"][data-role="text"]').click()
+            $('[data-name="desc"][role="textbox"] br').last().remove()
+            $(link).clone().off().removeAttr('style').appendTo($('[data-name="desc"][role="textbox"]').last().children())
+            $('[data-name="desc"][role="textbox"]').last().sendkeys(' ')
+            $('[data-name="desc"][role="textbox"]').last().blur()
+            $('.app__inner').click()
         }, 250);
         return false
     })
-    $('#art_tags_helper a').on('dblclick',function () {
+    $('#art_tags_helper a').on('dblclick', function () {
         clearTimeout(timer);
         let link = this
         $(this).css({
-            'color':'var(--color--red)'
+            'color': 'var(--color--red)'
         })
         $('#art_save_source').show()
         $('#art_add_user_tags').hide()
@@ -211,20 +249,21 @@ function link_events() {
             $('#art_clear').show()
             $('#art_get_danbooru').show()
             $(link).css({
-                'color':''
+                'color': ''
             })
             tags_events()
         })
         return false
-})
+    })
 }
+
 function tags_events() {
     $('#art_tags_helper .tag').off()
     $('.tags__tag').off()
     $('#art_tags_helper .tag').on('click', function (ev) {
         if (timer) clearTimeout(timer);
         let tag = this.textContent
-        timer = setTimeout(function() {
+        timer = setTimeout(function () {
             $('[data-role = "tags"] [type = "text"]').focus()
             $('[data-role = "tags"] [type = "text"]').val(tag)
             $('[data-role = "tags"] [type = "text"]').blur()
@@ -238,7 +277,7 @@ function tags_events() {
     $('#art_tags_helper .tag').on('dblclick', function (ev) {
         clearTimeout(timer)
         $('[name="title"]').focus()
-        $('[name="title"]').text($('[name="title"]').text()+this.textContent)
+        $('[name="title"]').text($('[name="title"]').text() + this.textContent)
         $('[name="title"]').blur()
         $('.app__inner').click()
     })
@@ -305,15 +344,15 @@ function dynamic_content_controller() {
                 })
             })
             $('input[type="file"]').on('change', dynamic_content_controller)
-        },250)
+        }, 250)
     }, 1000)
+
     function status_update() {
-    return `<section style="text-align: center;" id="art_query_status">Делаем запрос на IQDB...<br>
+        return `<section style="text-align: center;" id="art_query_status">Делаем запрос на IQDB...<br>
     <img class="player__apng" src="https://cs.pikabu.ru/apps/desktop/1.18.0/animations/stories-spinner.png">
 </section>`
     }
 }
-
 
 function canvasToImage(canvas) {
     var context = canvas.getContext('2d');
@@ -381,8 +420,7 @@ function process_iqdb_response(response) {
     } else {
         if (href == undefined) {
             window.alert(`SPFP: Арт не найден :(`)
-        }
-        else if (similarity < min_similarity) {
+        } else if (similarity < min_similarity) {
             window.alert(`SPFP: Процент сходства найденного арта слишком низкий:${similarity}%`)
         }
     }
@@ -420,6 +458,9 @@ function tags_helper_template() {
         <p>
             <label>Tags Helper</label>
             <i class="fa fa-question-circle" aria-hidden="true" style="cursor:pointer"></i>
+            <label id="art_settings_button" style="left: 100%;position: sticky;width: 12px;height: 12px;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon--ui__settings icon--ui__settings_profile">
+            <use xlink:href="#icon--ui__settings"></use></svg></label>
         </p>
         <p class="story-editor__meta-hint" id="art_help" style="display:none">
             Это окно создано расширением SPFP<br>
@@ -428,6 +469,7 @@ function tags_helper_template() {
             В случае успешного запроса расширение создаст конструктор тегов.<br>
             Чтобы выбрать тег - нажмите на него.            
         </p>
+        <div id="art_work_panel">
             <section class="input input_section input_tags">
                 <div class="input__box">
                     <input class="input__input input__input_carriage" id="art_danbooru_url" type="text"
@@ -461,13 +503,6 @@ function tags_helper_template() {
         <p id="art_user_tags" style="display:none">
         <label>Пользовательские теги:</label>
         </p>
-        <div class="collapse-button collapse-button_active" id="art_add_user_tags" style="width: auto;
-    line-height: normal;
-    text-align: center;
-    margin-left: 0px;
-    margin-top: 10px;" >
-            Изменить пользовательские теги
-        </div>
         <div class="collapse-button collapse-button_active" id="art_get_artist_names" style="
     width: auto;
     line-height: normal;
@@ -493,16 +528,38 @@ function tags_helper_template() {
             Сохранить источник
         </div>
         </div>
+        </div>
+        <div id="art_settings_panel" hidden>
+        <p>
+        <label>Минимальный процент сходства:</label>
+        <input type="text" id="settings_min_similarity">
+        </p>
+        <p>
+        <label>Web proxy:</label>
+        <input type="text" id="settings_web_proxy">
+        </p>
+        <p>
+        <label>Пользовательские теги:</label>
+        <input type="text" id="settings_user_tags">
+        </p>
+        <div class="collapse-button collapse-button_active" id="art_save_settings" style="width: auto;
+    line-height: normal;
+    text-align: center;
+    margin-left: 0px;
+    margin-top: 10px;" >
+            Сохранить
+        </div>
+</div>
     </section>
 </div>`
 }
 
 
-(function($){
+(function ($) {
 
-    $.fn.sendkeys = function (x){
+    $.fn.sendkeys = function (x) {
         x = x.replace(/([^{])\n/g, '$1{enter}'); // turn line feeds into explicit break insertions, but not if escaped
-        return this.each( function(){
+        return this.each(function () {
             bililiteRange(this).bounds('selection').sendkeys(x).select();
             this.focus();
         });
@@ -512,7 +569,7 @@ function tags_helper_template() {
 // are untrusted (http://www.w3.org/TR/DOM-Level-3-Events/#trusted-events)
 // documentation of special event handlers is at http://learn.jquery.com/events/event-extensions/
     $.event.special.keydown = $.event.special.keydown || {};
-    $.event.special.keydown._default = function (evt){
+    $.event.special.keydown._default = function (evt) {
         if (evt.isTrusted) return false;
         if (evt.ctrlKey || evt.altKey || evt.metaKey) return false; // only deal with printable characters. This may be a false assumption
         if (evt.key == null) return false; // nothing to print. Use the keymap plugin to set this
@@ -520,7 +577,7 @@ function tags_helper_template() {
         if (target.isContentEditable || target.nodeName == 'INPUT' || target.nodeName == 'TEXTAREA') {
             // only insert into editable elements
             var key = evt.key;
-            if (key.length > 1 && key.charAt(0) != '{') key = '{'+key+'}'; // sendkeys notation
+            if (key.length > 1 && key.charAt(0) != '{') key = '{' + key + '}'; // sendkeys notation
             $(target).sendkeys(key);
             return true;
         }
@@ -538,26 +595,26 @@ function tags_helper_template() {
     var canNormalize = n.firstChild.length == 3;
 
 
-    bililiteRange = function(el, debug){
+    bililiteRange = function (el, debug) {
         var ret;
-        if (debug){
+        if (debug) {
             ret = new NothingRange(); // Easier to force it to use the no-selection type than to try to find an old browser
-        }else if (window.getSelection && el.setSelectionRange){
+        } else if (window.getSelection && el.setSelectionRange) {
             // Standards. Element is an input or textarea
             // note that some input elements do not allow selections
-            try{
+            try {
                 el.selectionStart; // even getting the selection in such an element will throw
                 ret = new InputRange();
-            }catch(e){
+            } catch (e) {
                 ret = new NothingRange();
             }
-        }else if (window.getSelection){
+        } else if (window.getSelection) {
             // Standards, with any other kind of element
             ret = new W3CRange();
-        }else if (document.selection){
+        } else if (document.selection) {
             // Internet Explorer
             ret = new IERange();
-        }else{
+        } else {
             // doesn't support selection
             ret = new NothingRange();
         }
@@ -572,56 +629,59 @@ function tags_helper_template() {
         // in edge cases (right-clicks, drag-n-drop), and is vulnerable to a lower-down handler preventing bubbling.
         // I just don't know a better way.
         // I'll hack my event-listening code below, rather than create an entire new bilililiteRange, potentially before the DOM has loaded
-        if (!('bililiteRangeMouseDown' in ret._doc)){
+        if (!('bililiteRangeMouseDown' in ret._doc)) {
             var _doc = {_el: ret._doc};
             ret._doc.bililiteRangeMouseDown = false;
-            bililiteRange.fn.listen.call(_doc, 'mousedown', function() {
+            bililiteRange.fn.listen.call(_doc, 'mousedown', function () {
                 ret._doc.bililiteRangeMouseDown = true;
             });
-            bililiteRange.fn.listen.call(_doc, 'mouseup', function() {
+            bililiteRange.fn.listen.call(_doc, 'mouseup', function () {
                 ret._doc.bililiteRangeMouseDown = false;
             });
         }
         // note that bililiteRangeSelection is an array, which means that copying it only copies the address, which points to the original.
         // make sure that we never let it (always do return [bililiteRangeSelection[0], bililiteRangeSelection[1]]), which means never returning
         // this._bounds directly
-        if (!('bililiteRangeSelection' in el)){
+        if (!('bililiteRangeSelection' in el)) {
             // start tracking the selection
-            function trackSelection(evt){
-                if (evt && evt.which == 9){
+            function trackSelection(evt) {
+                if (evt && evt.which == 9) {
                     // do tabs my way, by restoring the selection
                     // there's a flash of the browser's selection, but I don't see a way of avoiding that
                     ret._nativeSelect(ret._nativeRange(el.bililiteRangeSelection));
-                }else{
+                } else {
                     el.bililiteRangeSelection = ret._nativeSelection();
                 }
             }
+
             trackSelection();
             // only IE does this right and allows us to grab the selection before blurring
-            if ('onbeforedeactivate' in el){
+            if ('onbeforedeactivate' in el) {
                 ret.listen('beforedeactivate', trackSelection);
-            }else{
+            } else {
                 // with standards-based browsers, have to listen for every user interaction
                 ret.listen('mouseup', trackSelection).listen('keyup', trackSelection);
             }
-            ret.listen(focusEvent, function(){
+            ret.listen(focusEvent, function () {
                 // restore the correct selection when the element comes into focus (mouse clicks change the position of the selection)
                 // Note that Firefox will not fire the focus event until the window/tab is active even if el.focus() is called
                 // https://bugzilla.mozilla.org/show_bug.cgi?id=566671
-                if (!ret._doc.bililiteRangeMouseDown){
+                if (!ret._doc.bililiteRangeMouseDown) {
                     ret._nativeSelect(ret._nativeRange(el.bililiteRangeSelection));
                 }
             });
         }
-        if (!('oninput' in el)){
+        if (!('oninput' in el)) {
             // give IE8 a chance. Note that this still fails in IE11, which has has oninput on contenteditable elements but does not
             // dispatch input events. See http://connect.microsoft.com/IE/feedback/details/794285/ie10-11-input-event-does-not-fire-on-div-with-contenteditable-set
             // TODO: revisit this when I have IE11 running on my development machine
             // TODO: FIXED
 
-            var inputhack = function() {ret.dispatch({type: 'input', bubbles: true}) };
+            var inputhack = function () {
+                ret.dispatch({type: 'input', bubbles: true})
+            };
 
-            if(typeof window.setTimeout == 'object'){ /* IE 8 sees `setTimeout` as an `object` and not a `function` */
+            if (typeof window.setTimeout == 'object') { /* IE 8 sees `setTimeout` as an `object` and not a `function` */
 
                 ret.listen('keyup', inputhack);
                 ret.listen('cut', inputhack);
@@ -630,7 +690,7 @@ function tags_helper_template() {
                 el.oninput = 'patched';
 
             }
-        }else{
+        } else {
 
             /*
                 IE9/IE11 supports the `textinput` event (even on contenteditable elements)
@@ -639,16 +699,18 @@ function tags_helper_template() {
 
             /* Detect IE 9/11, See: https://stackoverflow.com/questions/21825157/internet-explorer-11-detection  */
 
-            if((!(window.FileReader) || !!window.MSInputMethodContext) && !!document.documentMode){
+            if ((!(window.FileReader) || !!window.MSInputMethodContext) && !!document.documentMode) {
 
-                ret.listen('textinput', function(){ ret.dispatch({type: 'input', bubbles: true}); });
+                ret.listen('textinput', function () {
+                    ret.dispatch({type: 'input', bubbles: true});
+                });
 
             }
         }
         return ret;
     }
 
-    function textProp(el){
+    function textProp(el) {
         // returns the property that contains the text of the element
         // note that for <body> elements the text attribute represents the obsolete text color, not the textContent.
         // we document that these routines do not work for <body> elements so that should not be relevant
@@ -662,165 +724,176 @@ function tags_helper_template() {
     }
 
 // base class
-    function Range(){}
+    function Range() {
+    }
+
     Range.prototype = {
-        length: function() {
+        length: function () {
             return this._el[this._textProp].replace(/\r/g, '').length; // need to correct for IE's CrLf weirdness
         },
-        bounds: function(s){
-            if (bililiteRange.bounds[s]){
+        bounds: function (s) {
+            if (bililiteRange.bounds[s]) {
                 this._bounds = bililiteRange.bounds[s].apply(this);
-            }else if (s){
+            } else if (s) {
                 this._bounds = s; // don't do error checking now; things may change at a moment's notice
-            }else{
+            } else {
                 var b = [
-                    Math.max(0, Math.min (this.length(), this._bounds[0])),
-                    Math.max(0, Math.min (this.length(), this._bounds[1]))
+                    Math.max(0, Math.min(this.length(), this._bounds[0])),
+                    Math.max(0, Math.min(this.length(), this._bounds[1]))
                 ];
                 b[1] = Math.max(b[0], b[1]);
                 return b; // need to constrain it to fit
             }
             return this; // allow for chaining
         },
-        select: function(){
+        select: function () {
             var b = this._el.bililiteRangeSelection = this.bounds();
-            if (this._el === this._doc.activeElement){
+            if (this._el === this._doc.activeElement) {
                 // only actually select if this element is active!
                 this._nativeSelect(this._nativeRange(b));
             }
             this.dispatch({type: 'select', bubbles: true});
             return this; // allow for chaining
         },
-        text: function(text, select){
-            if (arguments.length){
+        text: function (text, select) {
+            if (arguments.length) {
                 var bounds = this.bounds(), el = this._el;
                 // signal the input per DOM 3 input events, http://www.w3.org/TR/DOM-Level-3-Events/#h4_events-inputevents
                 // we add another field, bounds, which are the bounds of the original text before being changed.
-                this.dispatch({type: 'beforeinput', bubbles: true,
-                    data: text, bounds: bounds});
+                this.dispatch({
+                    type: 'beforeinput', bubbles: true,
+                    data: text, bounds: bounds
+                });
                 this._nativeSetText(text, this._nativeRange(bounds));
-                if (select == 'start'){
-                    this.bounds ([bounds[0], bounds[0]]);
-                }else if (select == 'end'){
-                    this.bounds ([bounds[0]+text.length, bounds[0]+text.length]);
-                }else if (select == 'all'){
-                    this.bounds ([bounds[0], bounds[0]+text.length]);
+                if (select == 'start') {
+                    this.bounds([bounds[0], bounds[0]]);
+                } else if (select == 'end') {
+                    this.bounds([bounds[0] + text.length, bounds[0] + text.length]);
+                } else if (select == 'all') {
+                    this.bounds([bounds[0], bounds[0] + text.length]);
                 }
-                this.dispatch({type: 'input', bubbles: true,
-                    data: text, bounds: bounds});
+                this.dispatch({
+                    type: 'input', bubbles: true,
+                    data: text, bounds: bounds
+                });
                 return this; // allow for chaining
-            }else{
+            } else {
                 return this._nativeGetText(this._nativeRange(this.bounds())).replace(/\r/g, ''); // need to correct for IE's CrLf weirdness
             }
         },
-        insertEOL: function (){
+        insertEOL: function () {
             this._nativeEOL();
-            this._bounds = [this._bounds[0]+1, this._bounds[0]+1]; // move past the EOL marker
+            this._bounds = [this._bounds[0] + 1, this._bounds[0] + 1]; // move past the EOL marker
             return this;
         },
-        sendkeys: function (text){
+        sendkeys: function (text) {
             var self = this;
             this.data().sendkeysOriginalText = this.text();
             this.data().sendkeysBounds = undefined;
-            function simplechar (rng, c){
-                if (/^{[^}]*}$/.test(c)) c = c.slice(1,-1);	// deal with unknown {key}s
-                for (var i =0; i < c.length; ++i){
+
+            function simplechar(rng, c) {
+                if (/^{[^}]*}$/.test(c)) c = c.slice(1, -1);	// deal with unknown {key}s
+                for (var i = 0; i < c.length; ++i) {
                     var x = c.charCodeAt(i);
                     rng.dispatch({type: 'keypress', bubbles: true, keyCode: x, which: x, charCode: x});
                 }
                 rng.text(c, 'end');
             }
-            text.replace(/{[^}]*}|[^{]+|{/g, function(part){
+
+            text.replace(/{[^}]*}|[^{]+|{/g, function (part) {
                 (bililiteRange.sendkeys[part] || simplechar)(self, part, simplechar);
             });
             this.bounds(this.data().sendkeysBounds);
             this.dispatch({type: 'sendkeys', which: text});
             return this;
         },
-        top: function(){
+        top: function () {
             return this._nativeTop(this._nativeRange(this.bounds()));
         },
-        scrollIntoView: function(scroller){
+        scrollIntoView: function (scroller) {
             var top = this.top();
             // scroll into position if necessary
-            if (this._el.scrollTop > top || this._el.scrollTop+this._el.clientHeight < top){
-                if (scroller){
+            if (this._el.scrollTop > top || this._el.scrollTop + this._el.clientHeight < top) {
+                if (scroller) {
                     scroller.call(this._el, top);
-                }else{
+                } else {
                     this._el.scrollTop = top;
                 }
             }
             return this;
         },
-        wrap: function (n){
+        wrap: function (n) {
             this._nativeWrap(n, this._nativeRange(this.bounds()));
             return this;
         },
-        selection: function(text){
-            if (arguments.length){
+        selection: function (text) {
+            if (arguments.length) {
                 return this.bounds('selection').text(text, 'end').select();
-            }else{
+            } else {
                 return this.bounds('selection').text();
             }
         },
-        clone: function(){
+        clone: function () {
             return bililiteRange(this._el).bounds(this.bounds());
         },
-        all: function(text){
-            if (arguments.length){
-                this.dispatch ({type: 'beforeinput', bubbles: true, data: text});
+        all: function (text) {
+            if (arguments.length) {
+                this.dispatch({type: 'beforeinput', bubbles: true, data: text});
                 this._el[this._textProp] = text;
-                this.dispatch ({type: 'input', bubbles: true, data: text});
+                this.dispatch({type: 'input', bubbles: true, data: text});
                 return this;
-            }else{
+            } else {
                 return this._el[this._textProp].replace(/\r/g, ''); // need to correct for IE's CrLf weirdness
             }
         },
-        element: function() { return this._el },
+        element: function () {
+            return this._el
+        },
         // includes a quickie polyfill for CustomEvent for IE that isn't perfect but works for me
         // IE10 allows custom events but not "new CustomEvent"; have to do it the old-fashioned way
-        dispatch: function(opts){
+        dispatch: function (opts) {
             opts = opts || {};
             var event = document.createEvent ? document.createEvent('CustomEvent') : this._doc.createEventObject();
             event.initCustomEvent && event.initCustomEvent(opts.type, !!opts.bubbles, !!opts.cancelable, opts.detail);
             for (var key in opts) event[key] = opts[key];
             // dispatch event asynchronously (in the sense of on the next turn of the event loop; still should be fired in order of dispatch
             var el = this._el;
-            setTimeout(function(){
+            setTimeout(function () {
                 try {
                     el.dispatchEvent ? el.dispatchEvent(event) : el.fireEvent("on" + opts.type, document.createEventObject());
-                }catch(e){
+                } catch (e) {
                     // IE8 will not let me fire custom events at all. Call them directly
-                    var listeners = el['listen'+opts.type];
-                    if (listeners) for (var i = 0; i < listeners.length; ++i){
+                    var listeners = el['listen' + opts.type];
+                    if (listeners) for (var i = 0; i < listeners.length; ++i) {
                         listeners[i].call(el, event);
                     }
                 }
             }, 0);
             return this;
         },
-        listen: function (type, func){
+        listen: function (type, func) {
             var el = this._el;
-            if (el.addEventListener){
+            if (el.addEventListener) {
                 el.addEventListener(type, func);
-            }else{
+            } else {
                 el.attachEvent("on" + type, func);
                 // IE8 can't even handle custom events created with createEventObject  (though it permits attachEvent), so we have to make our own
-                var listeners = el['listen'+type] = el['listen'+type] || [];
+                var listeners = el['listen' + type] = el['listen' + type] || [];
                 listeners.push(func);
             }
             return this;
         },
-        dontlisten: function (type, func){
+        dontlisten: function (type, func) {
             var el = this._el;
-            if (el.removeEventListener){
+            if (el.removeEventListener) {
                 el.removeEventListener(type, func);
-            }else try{
+            } else try {
                 el.detachEvent("on" + type, func);
-            }catch(e){
-                var listeners = el['listen'+type];
-                if (listeners) for (var i = 0; i < listeners.length; ++i){
-                    if (listeners[i] === func) listeners[i] = function(){}; // replace with a noop
+            } catch (e) {
+                var listeners = el['listen' + type];
+                if (listeners) for (var i = 0; i < listeners.length; ++i) {
+                    if (listeners[i] === func) listeners[i] = function () {
+                    }; // replace with a noop
                 }
             }
             return this;
@@ -829,20 +902,26 @@ function tags_helper_template() {
 
 // allow extensions ala jQuery
     bililiteRange.fn = Range.prototype; // to allow monkey patching
-    bililiteRange.extend = function(fns){
+    bililiteRange.extend = function (fns) {
         for (fn in fns) Range.prototype[fn] = fns[fn];
     };
 
 //bounds functions
     bililiteRange.bounds = {
-        all: function() { return [0, this.length()] },
-        start: function () { return [0,0] },
-        end: function () { return [this.length(), this.length()] },
-        selection: function(){
-            if (this._el === this._doc.activeElement){
-                this.bounds ('all'); // first select the whole thing for constraining
+        all: function () {
+            return [0, this.length()]
+        },
+        start: function () {
+            return [0, 0]
+        },
+        end: function () {
+            return [this.length(), this.length()]
+        },
+        selection: function () {
+            if (this._el === this._doc.activeElement) {
+                this.bounds('all'); // first select the whole thing for constraining
                 return this._nativeSelection();
-            }else{
+            } else {
                 return this._el.bililiteRangeSelection;
             }
         }
@@ -850,49 +929,49 @@ function tags_helper_template() {
 
 // sendkeys functions
     bililiteRange.sendkeys = {
-        '{enter}': function (rng){
+        '{enter}': function (rng) {
             rng.dispatch({type: 'keypress', bubbles: true, keyCode: '\n', which: '\n', charCode: '\n'});
             rng.insertEOL();
         },
-        '{tab}': function (rng, c, simplechar){
+        '{tab}': function (rng, c, simplechar) {
             simplechar(rng, '\t'); // useful for inserting what would be whitespace
         },
-        '{newline}': function (rng, c, simplechar){
+        '{newline}': function (rng, c, simplechar) {
             simplechar(rng, '\n'); // useful for inserting what would be whitespace (and if I don't want to use insertEOL, which does some fancy things)
         },
-        '{backspace}': function (rng){
+        '{backspace}': function (rng) {
             var b = rng.bounds();
-            if (b[0] == b[1]) rng.bounds([b[0]-1, b[0]]); // no characters selected; it's just an insertion point. Remove the previous character
+            if (b[0] == b[1]) rng.bounds([b[0] - 1, b[0]]); // no characters selected; it's just an insertion point. Remove the previous character
             rng.text('', 'end'); // delete the characters and update the selection
         },
-        '{del}': function (rng){
+        '{del}': function (rng) {
             var b = rng.bounds();
-            if (b[0] == b[1]) rng.bounds([b[0], b[0]+1]); // no characters selected; it's just an insertion point. Remove the next character
+            if (b[0] == b[1]) rng.bounds([b[0], b[0] + 1]); // no characters selected; it's just an insertion point. Remove the next character
             rng.text('', 'end'); // delete the characters and update the selection
         },
-        '{rightarrow}':  function (rng){
+        '{rightarrow}': function (rng) {
             var b = rng.bounds();
             if (b[0] == b[1]) ++b[1]; // no characters selected; it's just an insertion point. Move to the right
             rng.bounds([b[1], b[1]]);
         },
-        '{leftarrow}': function (rng){
+        '{leftarrow}': function (rng) {
             var b = rng.bounds();
             if (b[0] == b[1]) --b[0]; // no characters selected; it's just an insertion point. Move to the left
             rng.bounds([b[0], b[0]]);
         },
-        '{selectall}' : function (rng){
+        '{selectall}': function (rng) {
             rng.bounds('all');
         },
-        '{selection}': function (rng){
+        '{selection}': function (rng) {
             // insert the characters without the sendkeys processing
             var s = rng.data().sendkeysOriginalText;
-            for (var i =0; i < s.length; ++i){
+            for (var i = 0; i < s.length; ++i) {
                 var x = s.charCodeAt(i);
                 rng.dispatch({type: 'keypress', bubbles: true, keyCode: x, which: x, charCode: x});
             }
             rng.text(s, 'end');
         },
-        '{mark}' : function (rng){
+        '{mark}': function (rng) {
             rng.data().sendkeysBounds = rng.bounds();
         }
     };
@@ -903,115 +982,120 @@ function tags_helper_template() {
     bililiteRange.sendkeys['{ArrowRight}'] = bililiteRange.sendkeys['{rightarrow}'];
     bililiteRange.sendkeys['{ArrowLeft}'] = bililiteRange.sendkeys['{leftarrow}'];
 
-    function IERange(){}
+    function IERange() {
+    }
+
     IERange.prototype = new Range();
-    IERange.prototype._nativeRange = function (bounds){
+    IERange.prototype._nativeRange = function (bounds) {
         var rng;
-        if (this._el.tagName == 'INPUT'){
+        if (this._el.tagName == 'INPUT') {
             // IE 8 is very inconsistent; textareas have createTextRange but it doesn't work
             rng = this._el.createTextRange();
-        }else{
-            rng = this._doc.body.createTextRange ();
+        } else {
+            rng = this._doc.body.createTextRange();
             rng.moveToElementText(this._el);
         }
-        if (bounds){
+        if (bounds) {
             if (bounds[1] < 0) bounds[1] = 0; // IE tends to run elements out of bounds
             if (bounds[0] > this.length()) bounds[0] = this.length();
-            if (bounds[1] < rng.text.replace(/\r/g, '').length){ // correct for IE's CrLf weirdness
+            if (bounds[1] < rng.text.replace(/\r/g, '').length) { // correct for IE's CrLf weirdness
                 // block-display elements have an invisible, uncounted end of element marker, so we move an extra one and use the current length of the range
-                rng.moveEnd ('character', -1);
-                rng.moveEnd ('character', bounds[1]-rng.text.replace(/\r/g, '').length);
+                rng.moveEnd('character', -1);
+                rng.moveEnd('character', bounds[1] - rng.text.replace(/\r/g, '').length);
             }
             if (bounds[0] > 0) rng.moveStart('character', bounds[0]);
         }
         return rng;
     };
-    IERange.prototype._nativeSelect = function (rng){
+    IERange.prototype._nativeSelect = function (rng) {
         rng.select();
     };
-    IERange.prototype._nativeSelection = function (){
+    IERange.prototype._nativeSelection = function () {
         // returns [start, end] for the selection constrained to be in element
         var rng = this._nativeRange(); // range of the element to constrain to
         var len = this.length();
         var sel = this._doc.selection.createRange();
-        try{
+        try {
             return [
                 iestart(sel, rng),
-                ieend (sel, rng)
+                ieend(sel, rng)
             ];
-        }catch (e){
+        } catch (e) {
             // TODO: determine if this is still necessary, since we only call _nativeSelection if _el is active
             // IE gets upset sometimes about comparing text to input elements, but the selections cannot overlap, so make a best guess
-            return (sel.parentElement().sourceIndex < this._el.sourceIndex) ? [0,0] : [len, len];
+            return (sel.parentElement().sourceIndex < this._el.sourceIndex) ? [0, 0] : [len, len];
         }
     };
-    IERange.prototype._nativeGetText = function (rng){
+    IERange.prototype._nativeGetText = function (rng) {
         return rng.text;
     };
-    IERange.prototype._nativeSetText = function (text, rng){
+    IERange.prototype._nativeSetText = function (text, rng) {
         rng.text = text;
     };
-    IERange.prototype._nativeEOL = function(){
-        if ('value' in this._el){
+    IERange.prototype._nativeEOL = function () {
+        if ('value' in this._el) {
             this.text('\n'); // for input and textarea, insert it straight
-        }else{
+        } else {
             this._nativeRange(this.bounds()).pasteHTML('\n<br/>');
         }
     };
-    IERange.prototype._nativeTop = function(rng){
-        var startrng = this._nativeRange([0,0]);
+    IERange.prototype._nativeTop = function (rng) {
+        var startrng = this._nativeRange([0, 0]);
         return rng.boundingTop - startrng.boundingTop;
     }
-    IERange.prototype._nativeWrap = function(n, rng) {
+    IERange.prototype._nativeWrap = function (n, rng) {
         // hacky to use string manipulation but I don't see another way to do it.
         var div = document.createElement('div');
         div.appendChild(n);
         // insert the existing range HTML after the first tag
-        var html = div.innerHTML.replace('><', '>'+rng.htmlText+'<');
+        var html = div.innerHTML.replace('><', '>' + rng.htmlText + '<');
         rng.pasteHTML(html);
     };
 
 // IE internals
-    function iestart(rng, constraint){
+    function iestart(rng, constraint) {
         // returns the position (in character) of the start of rng within constraint. If it's not in constraint, returns 0 if it's before, length if it's after
         var len = constraint.text.replace(/\r/g, '').length; // correct for IE's CrLf weirdness
-        if (rng.compareEndPoints ('StartToStart', constraint) <= 0) return 0; // at or before the beginning
-        if (rng.compareEndPoints ('StartToEnd', constraint) >= 0) return len;
-        for (var i = 0; rng.compareEndPoints ('StartToStart', constraint) > 0; ++i, rng.moveStart('character', -1));
+        if (rng.compareEndPoints('StartToStart', constraint) <= 0) return 0; // at or before the beginning
+        if (rng.compareEndPoints('StartToEnd', constraint) >= 0) return len;
+        for (var i = 0; rng.compareEndPoints('StartToStart', constraint) > 0; ++i, rng.moveStart('character', -1)) ;
         return i;
     }
-    function ieend (rng, constraint){
+
+    function ieend(rng, constraint) {
         // returns the position (in character) of the end of rng within constraint. If it's not in constraint, returns 0 if it's before, length if it's after
         var len = constraint.text.replace(/\r/g, '').length; // correct for IE's CrLf weirdness
-        if (rng.compareEndPoints ('EndToEnd', constraint) >= 0) return len; // at or after the end
-        if (rng.compareEndPoints ('EndToStart', constraint) <= 0) return 0;
-        for (var i = 0; rng.compareEndPoints ('EndToStart', constraint) > 0; ++i, rng.moveEnd('character', -1));
+        if (rng.compareEndPoints('EndToEnd', constraint) >= 0) return len; // at or after the end
+        if (rng.compareEndPoints('EndToStart', constraint) <= 0) return 0;
+        for (var i = 0; rng.compareEndPoints('EndToStart', constraint) > 0; ++i, rng.moveEnd('character', -1)) ;
         return i;
     }
 
 // an input element in a standards document. "Native Range" is just the bounds array
-    function InputRange(){}
+    function InputRange() {
+    }
+
     InputRange.prototype = new Range();
-    InputRange.prototype._nativeRange = function(bounds) {
+    InputRange.prototype._nativeRange = function (bounds) {
         return bounds || [0, this.length()];
     };
-    InputRange.prototype._nativeSelect = function (rng){
+    InputRange.prototype._nativeSelect = function (rng) {
         this._el.setSelectionRange(rng[0], rng[1]);
     };
-    InputRange.prototype._nativeSelection = function(){
+    InputRange.prototype._nativeSelection = function () {
         return [this._el.selectionStart, this._el.selectionEnd];
     };
-    InputRange.prototype._nativeGetText = function(rng){
+    InputRange.prototype._nativeGetText = function (rng) {
         return this._el.value.substring(rng[0], rng[1]);
     };
-    InputRange.prototype._nativeSetText = function(text, rng){
+    InputRange.prototype._nativeSetText = function (text, rng) {
         var val = this._el.value;
         this._el.value = val.substring(0, rng[0]) + text + val.substring(rng[1]);
     };
-    InputRange.prototype._nativeEOL = function(){
+    InputRange.prototype._nativeEOL = function () {
         this.text('\n');
     };
-    InputRange.prototype._nativeTop = function(rng){
+    InputRange.prototype._nativeTop = function (rng) {
         // I can't remember where I found this clever hack to find the location of text in a text area
         var clone = this._el.cloneNode(true);
         clone.style.visibility = 'hidden';
@@ -1026,75 +1110,79 @@ function tags_helper_template() {
         clone.parentNode.removeChild(clone);
         return top;
     }
-    InputRange.prototype._nativeWrap = function() {throw new Error("Cannot wrap in a text element")};
+    InputRange.prototype._nativeWrap = function () {
+        throw new Error("Cannot wrap in a text element")
+    };
 
-    function W3CRange(){}
+    function W3CRange() {
+    }
+
     W3CRange.prototype = new Range();
-    W3CRange.prototype._nativeRange = function (bounds){
+    W3CRange.prototype._nativeRange = function (bounds) {
         var rng = this._doc.createRange();
         rng.selectNodeContents(this._el);
-        if (bounds){
-            w3cmoveBoundary (rng, bounds[0], true, this._el);
-            rng.collapse (true);
-            w3cmoveBoundary (rng, bounds[1]-bounds[0], false, this._el);
+        if (bounds) {
+            w3cmoveBoundary(rng, bounds[0], true, this._el);
+            rng.collapse(true);
+            w3cmoveBoundary(rng, bounds[1] - bounds[0], false, this._el);
         }
         return rng;
     };
-    W3CRange.prototype._nativeSelect = function (rng){
+    W3CRange.prototype._nativeSelect = function (rng) {
         this._win.getSelection().removeAllRanges();
-        this._win.getSelection().addRange (rng);
+        this._win.getSelection().addRange(rng);
     };
-    W3CRange.prototype._nativeSelection = function (){
+    W3CRange.prototype._nativeSelection = function () {
         // returns [start, end] for the selection constrained to be in element
         var rng = this._nativeRange(); // range of the element to constrain to
         if (this._win.getSelection().rangeCount == 0) return [this.length(), this.length()]; // append to the end
         var sel = this._win.getSelection().getRangeAt(0);
         return [
             w3cstart(sel, rng),
-            w3cend (sel, rng)
+            w3cend(sel, rng)
         ];
     }
-    W3CRange.prototype._nativeGetText = function (rng){
+    W3CRange.prototype._nativeGetText = function (rng) {
         return String.prototype.slice.apply(this._el.textContent, this.bounds());
         // return rng.toString(); // this fails in IE11 since it insists on inserting \r's before \n's in Ranges. node.textContent works as expected
     };
-    W3CRange.prototype._nativeSetText = function (text, rng){
+    W3CRange.prototype._nativeSetText = function (text, rng) {
         rng.deleteContents();
-        rng.insertNode (this._doc.createTextNode(text));
+        rng.insertNode(this._doc.createTextNode(text));
         if (canNormalize) this._el.normalize(); // merge the text with the surrounding text
     };
-    W3CRange.prototype._nativeEOL = function(){
+    W3CRange.prototype._nativeEOL = function () {
         var rng = this._nativeRange(this.bounds());
         rng.deleteContents();
         var br = this._doc.createElement('br');
-        br.setAttribute ('_moz_dirty', ''); // for Firefox
-        rng.insertNode (br);
-        rng.insertNode (this._doc.createTextNode('\n'));
-        rng.collapse (false);
+        br.setAttribute('_moz_dirty', ''); // for Firefox
+        rng.insertNode(br);
+        rng.insertNode(this._doc.createTextNode('\n'));
+        rng.collapse(false);
     };
-    W3CRange.prototype._nativeTop = function(rng){
+    W3CRange.prototype._nativeTop = function (rng) {
         if (this.length == 0) return 0; // no text, no scrolling
-        if (rng.toString() == ''){
+        if (rng.toString() == '') {
             var textnode = this._doc.createTextNode('X');
-            rng.insertNode (textnode);
+            rng.insertNode(textnode);
         }
-        var startrng = this._nativeRange([0,1]);
+        var startrng = this._nativeRange([0, 1]);
         var top = rng.getBoundingClientRect().top - startrng.getBoundingClientRect().top;
         if (textnode) textnode.parentNode.removeChild(textnode);
         return top;
     }
-    W3CRange.prototype._nativeWrap = function(n, rng) {
+    W3CRange.prototype._nativeWrap = function (n, rng) {
         rng.surroundContents(n);
     };
 
 // W3C internals
-    function nextnode (node, root){
+    function nextnode(node, root) {
         //  in-order traversal
         // we've already visited node, so get kids then siblings
         if (node.firstChild) return node.firstChild;
         if (node.nextSibling) return node.nextSibling;
-        if (node===root) return null;
-        while (node.parentNode){
+        if (node === root) return null;
+        while (node.parentNode) {
             // get uncles
             node = node.parentNode;
             if (node == root) return null;
@@ -1102,101 +1190,108 @@ function tags_helper_template() {
         }
         return null;
     }
-    function w3cmoveBoundary (rng, n, bStart, el){
+
+    function w3cmoveBoundary(rng, n, bStart, el) {
         // move the boundary (bStart == true ? start : end) n characters forward, up to the end of element el. Forward only!
         // if the start is moved after the end, then an exception is raised
         if (n <= 0) return;
         var node = rng[bStart ? 'startContainer' : 'endContainer'];
-        if (node.nodeType == 3){
+        if (node.nodeType == 3) {
             // we may be starting somewhere into the text
             n += rng[bStart ? 'startOffset' : 'endOffset'];
         }
-        while (node){
-            if (node.nodeType == 3){
+        while (node) {
+            if (node.nodeType == 3) {
                 var length = node.nodeValue.length;
-                if (n <= length){
+                if (n <= length) {
                     rng[bStart ? 'setStart' : 'setEnd'](node, n);
                     // special case: if we end next to a <br>, include that node.
-                    if (n == length){
+                    if (n == length) {
                         // skip past zero-length text nodes
-                        for (var next = nextnode (node, el); next && next.nodeType==3 && next.nodeValue.length == 0; next = nextnode(next, el)){
+                        for (var next = nextnode(node, el); next && next.nodeType == 3 && next.nodeValue.length == 0; next = nextnode(next, el)) {
                             rng[bStart ? 'setStartAfter' : 'setEndAfter'](next);
                         }
                         if (next && next.nodeType == 1 && next.nodeName == "BR") rng[bStart ? 'setStartAfter' : 'setEndAfter'](next);
                     }
                     return;
-                }else{
+                } else {
                     rng[bStart ? 'setStartAfter' : 'setEndAfter'](node); // skip past this one
                     n -= length; // and eat these characters
                 }
             }
-            node = nextnode (node, el);
+            node = nextnode(node, el);
         }
     }
-    var     START_TO_START                 = 0; // from the w3c definitions
-    var     START_TO_END                   = 1;
-    var     END_TO_END                     = 2;
-    var     END_TO_START                   = 3;
+
+    var START_TO_START = 0; // from the w3c definitions
+    var START_TO_END = 1;
+    var END_TO_END = 2;
+    var END_TO_START = 3;
 // from the Mozilla documentation, for range.compareBoundaryPoints(how, sourceRange)
 // -1, 0, or 1, indicating whether the corresponding boundary-point of range is respectively before, equal to, or after the corresponding boundary-point of sourceRange.
     // * Range.END_TO_END compares the end boundary-point of sourceRange to the end boundary-point of range.
     // * Range.END_TO_START compares the end boundary-point of sourceRange to the start boundary-point of range.
     // * Range.START_TO_END compares the start boundary-point of sourceRange to the end boundary-point of range.
     // * Range.START_TO_START compares the start boundary-point of sourceRange to the start boundary-point of range.
-    function w3cstart(rng, constraint){
-        if (rng.compareBoundaryPoints (START_TO_START, constraint) <= 0) return 0; // at or before the beginning
-        if (rng.compareBoundaryPoints (END_TO_START, constraint) >= 0) return constraint.toString().length;
+    function w3cstart(rng, constraint) {
+        if (rng.compareBoundaryPoints(START_TO_START, constraint) <= 0) return 0; // at or before the beginning
+        if (rng.compareBoundaryPoints(END_TO_START, constraint) >= 0) return constraint.toString().length;
         rng = rng.cloneRange(); // don't change the original
-        rng.setEnd (constraint.endContainer, constraint.endOffset); // they now end at the same place
+        rng.setEnd(constraint.endContainer, constraint.endOffset); // they now end at the same place
         return constraint.toString().replace(/\r/g, '').length - rng.toString().replace(/\r/g, '').length;
     }
-    function w3cend (rng, constraint){
-        if (rng.compareBoundaryPoints (END_TO_END, constraint) >= 0) return constraint.toString().length; // at or after the end
-        if (rng.compareBoundaryPoints (START_TO_END, constraint) <= 0) return 0;
+
+    function w3cend(rng, constraint) {
+        if (rng.compareBoundaryPoints(END_TO_END, constraint) >= 0) return constraint.toString().length; // at or after the end
+        if (rng.compareBoundaryPoints(START_TO_END, constraint) <= 0) return 0;
         rng = rng.cloneRange(); // don't change the original
-        rng.setStart (constraint.startContainer, constraint.startOffset); // they now start at the same place
+        rng.setStart(constraint.startContainer, constraint.startOffset); // they now start at the same place
         return rng.toString().replace(/\r/g, '').length;
     }
 
-    function NothingRange(){}
+    function NothingRange() {
+    }
+
     NothingRange.prototype = new Range();
-    NothingRange.prototype._nativeRange = function(bounds) {
-        return bounds || [0,this.length()];
+    NothingRange.prototype._nativeRange = function (bounds) {
+        return bounds || [0, this.length()];
     };
-    NothingRange.prototype._nativeSelect = function (rng){ // do nothing
+    NothingRange.prototype._nativeSelect = function (rng) { // do nothing
     };
-    NothingRange.prototype._nativeSelection = function(){
-        return [0,0];
+    NothingRange.prototype._nativeSelection = function () {
+        return [0, 0];
     };
-    NothingRange.prototype._nativeGetText = function (rng){
+    NothingRange.prototype._nativeGetText = function (rng) {
         return this._el[this._textProp].substring(rng[0], rng[1]);
     };
-    NothingRange.prototype._nativeSetText = function (text, rng){
+    NothingRange.prototype._nativeSetText = function (text, rng) {
         var val = this._el[this._textProp];
         this._el[this._textProp] = val.substring(0, rng[0]) + text + val.substring(rng[1]);
     };
-    NothingRange.prototype._nativeEOL = function(){
+    NothingRange.prototype._nativeEOL = function () {
         this.text('\n');
     };
-    NothingRange.prototype._nativeTop = function(){
+    NothingRange.prototype._nativeTop = function () {
         return 0;
     };
-    NothingRange.prototype._nativeWrap = function() {throw new Error("Wrapping not implemented")};
+    NothingRange.prototype._nativeWrap = function () {
+        throw new Error("Wrapping not implemented")
+    };
 
 
 // data for elements, similar to jQuery data, but allows for monitoring with custom events
     var data = []; // to avoid attaching javascript objects to DOM elements, to avoid memory leaks
-    bililiteRange.fn.data = function(){
+    bililiteRange.fn.data = function () {
         var index = this.element().bililiteRangeData;
-        if (index == undefined){
+        if (index == undefined) {
             index = this.element().bililiteRangeData = data.length;
             data[index] = new Data(this);
         }
         return data[index];
     }
     try {
-        Object.defineProperty({},'foo',{}); // IE8 will throw an error
-        var Data = function(rng) {
+        Object.defineProperty({}, 'foo', {}); // IE8 will throw an error
+        var Data = function (rng) {
             // we use JSON.stringify to display the data values. To make some of those non-enumerable, we have to use properties
             Object.defineProperty(this, 'values', {
                 value: {}
@@ -1205,7 +1300,7 @@ function tags_helper_template() {
                 value: rng
             });
             Object.defineProperty(this, 'toJSON', {
-                value: function(){
+                value: function () {
                     var ret = {};
                     for (var i in Data.prototype) if (i in this.values) ret[i] = this.values[i];
                     return ret;
@@ -1213,7 +1308,7 @@ function tags_helper_template() {
             });
             // to display all the properties (not just those changed), use JSON.stringify(state.all)
             Object.defineProperty(this, 'all', {
-                get: function(){
+                get: function () {
                     var ret = {};
                     for (var i in Data.prototype) ret[i] = this[i];
                     return ret;
@@ -1229,7 +1324,7 @@ function tags_helper_template() {
             value: {}
         });
 
-        bililiteRange.data = function (name, newdesc){
+        bililiteRange.data = function (name, newdesc) {
             newdesc = newdesc || {};
             var desc = Object.getOwnPropertyDescriptor(Data.prototype, name) || {};
             if ('enumerable' in newdesc) desc.enumerable = !!newdesc.enumerable;
@@ -1237,11 +1332,11 @@ function tags_helper_template() {
             if ('value' in newdesc) Data.prototype.values[name] = newdesc.value;
             if ('monitored' in newdesc) Data.prototype.monitored[name] = newdesc.monitored;
             desc.configurable = true;
-            desc.get = function (){
+            desc.get = function () {
                 if (name in this.values) return this.values[name];
                 return Data.prototype.values[name];
             };
-            desc.set = function (value){
+            desc.set = function (value) {
                 this.values[name] = value;
                 if (Data.prototype.monitored[name]) this.sourceRange.dispatch({
                     type: 'bililiteRangeData',
@@ -1251,11 +1346,13 @@ function tags_helper_template() {
             }
             Object.defineProperty(Data.prototype, name, desc);
         }
-    }catch(err){
+    } catch (err) {
         // if we can't set object property properties, just use old-fashioned properties
-        Data = function(rng){ this.sourceRange = rng };
+        Data = function (rng) {
+            this.sourceRange = rng
+        };
         Data.prototype = {};
-        bililiteRange.data = function(name, newdesc){
+        bililiteRange.data = function (name, newdesc) {
             if ('value' in newdesc) Data.prototype[name] = newdesc.value;
         }
     }
@@ -1264,10 +1361,8 @@ function tags_helper_template() {
 
 
 // Polyfill for forEach, per Mozilla documentation. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach#Polyfill
-if (!Array.prototype.forEach)
-{
-    Array.prototype.forEach = function(fun /*, thisArg */)
-    {
+if (!Array.prototype.forEach) {
+    Array.prototype.forEach = function (fun /*, thisArg */) {
         "use strict";
 
         if (this === void 0 || this === null)
@@ -1279,8 +1374,7 @@ if (!Array.prototype.forEach)
             throw new TypeError();
 
         var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-        for (var i = 0; i < len; i++)
-        {
+        for (var i = 0; i < len; i++) {
             if (i in t)
                 fun.call(thisArg, t[i], i, t);
         }
