@@ -1,9 +1,9 @@
 ﻿$(document).ready(main_function());
-//let iqdb_url = 'http://danbooru.iqdb.org/?url=';
+let iqdb_url = 'http://danbooru.iqdb.org/?url=';
 //let min_similarity = 80;
 //var user_tags='';
 let timer;
-var settings = {}
+
 /*
    00 Post Page
    01 Add Post page
@@ -15,36 +15,39 @@ function page_type() {
     else return 2;
     return -1;
 }
-function apply_settings(action, fields){
-    if(action=='load'){
+
+function apply_settings(action, fields) {
+    var settings = []
+    if (action == 'load') {
         $(fields).each(function () {
             var field = $(this)
-            var key = field.attr('id')
+            var key = field.attr('id').toString()
             console.log(key)
-            if(localStorage.getItem(key)){
-                settings[key.toString()] = localStorage.getItem(key)
-            }else {
-                settings[key.toString()] = get_default_value(key)
+            if (localStorage.getItem(key)) {
+                settings[key] = localStorage.getItem(key)
+            } else {
+                var default_value = get_default_value(key)
+                settings[key] = default_value
             }
             $(`#${key}`).val(settings[key])
         })
-    }else if(action=='save'){
+    } else if (action == 'save') {
         $(fields).each(function () {
-            settings[$(this).attr('id')]=$(this).val()
-            localStorage.setItem($(this).attr('id'),$(this).val())
+            settings[$(this).attr('id')] = $(this).val()
+            localStorage.setItem($(this).attr('id'), $(this).val())
         })
     }
 
 }
 
 function get_default_value(key) {
-    if(key=='settings_iqdb_url'){
+    if (key == 'settings_iqdb_url') {
         return 'http://danbooru.iqdb.org/?url='
-    }else if(key=='settings_min_similarity'){
+    } else if (key == 'settings_min_similarity') {
         return '80'
-    }else if(key=='settings_user_tags'){
+    } else if (key == 'settings_user_tags') {
         return ''
-    }else if(key=='settings_web_proxy'){
+    } else if (key == 'settings_web_proxy') {
         return ''
     }
 }
@@ -56,7 +59,7 @@ function main_function() {
             break;
         case 1:
             $(tags_helper_template()).insertAfter('.story-editor__blocks')
-            apply_settings('load',$('#art_settings_panel input'))
+            apply_settings('load', $('#art_settings_panel input'))
             dynamic_content_controller()
             events_controller(page_type());
             break;
@@ -69,7 +72,7 @@ function events_controller(page) {
     events_remover('#art_tags_helper')
     if (page == 1) {
         $('#art_get_danbooru').on('click', function (ev) {
-            let url = $('#art_danbooru_url').val();
+            let url = $('#settings_web_proxy').val() + $('#art_danbooru_url').val();
             console.log(url);
             $('#art_get_danbooru').text('')
             $('<img>', {
@@ -98,9 +101,11 @@ function events_controller(page) {
                         }).appendTo('#art_copyrights');
                     }
                 }
-                if (response.tag_string_artist) {
+                if (response.tag_string_artist || response[0]) {
                     $('#art_artists').show();
-                    let artists_arr = response.tag_string_artist.split(' ');
+                    let artists_arr = '';
+                    if (response.tag_string_artist) artists_arr = response.tag_string_artist.split(' ');
+                    if (response[0]) artists_arr = response[0].name.split(' ')
                     for (var i = 0; i < artists_arr.length; i++) {
                         if (artists_arr[i].split('_(').length > 1) {
                             $('#art_complex_tag').show()
@@ -136,7 +141,7 @@ function events_controller(page) {
             })
         })
 
-        user_tags = localStorage.getItem('art_user_tags');
+        var user_tags = $('#settings_user_tags').val();
         if (user_tags) {
             $('#art_user_tags').show()
             $('#art_user_tags .tags__tag').remove()
@@ -148,6 +153,9 @@ function events_controller(page) {
                     text: tags_arr[i].replace(/\_/ig, " ")
                 }).appendTo('#art_user_tags');
             }
+        } else {
+            $('#art_user_tags').hide()
+            $('#art_user_tags .tags__tag').remove()
         }
         $('#art_clear').on('click', function () {
             $('#art_tags_helper .tag').parent().hide()
@@ -167,7 +175,7 @@ function events_controller(page) {
                 let artist = $(this).text()
                 chrome.runtime.sendMessage(JSON.stringify({
                     'type': 'get',
-                    'url': `https://danbooru.donmai.us/artists.json?name=${$(this).text().replace(/ /g, '_')}`
+                    'url': `${$('#settings_web_proxy').val()}https://danbooru.donmai.us/artists.json?name=${$(this).text().replace(/ /g, '_')}`
                 }), function (response) {
                     if (response[0].other_names != undefined) {
                         $('<p>', {
@@ -186,12 +194,14 @@ function events_controller(page) {
                 })
             })
         })
-        $('#art_tags_helper i').on('mouseover', function () {
-            $('#art_help').show(1000)
+        $('#art_tags_helper i').on('click', function () {
+            if ($('#art_help').is(":hidden")) {
+                $('#art_help').show()
+            } else {
+                $('#art_help').hide()
+            }
         })
-        $('#art_tags_helper i').on('mouseout', function () {
-            $('#art_help').hide(1000)
-        })
+
         $('#art_settings_button').on('click', function () {
             $('#art_settings_button').off()
             $('#art_work_panel').hide()
@@ -202,6 +212,9 @@ function events_controller(page) {
                 $('#art_settings_panel').hide()
                 events_controller(page)
             })
+        })
+        $('#art_save_settings').on('click', function () {
+            apply_settings('save', $('#art_settings_panel input'))
         })
         tags_events()
     }
@@ -414,13 +427,13 @@ function events_remover(selector) {
 function process_iqdb_response(response) {
     let href = $(response).find('th:contains("Best match")').parents('table').find('a').attr('href')
     let similarity = parseInt($(response).find('th:contains("Best match")').parents('table').find('td:contains("similarity")').text())
-    if (href != undefined && similarity > min_similarity) {
+    if (href != undefined && similarity > $('#settings_min_similarity').val()) {
         $('#art_danbooru_url').val('https:' + href);
         $('#art_get_danbooru').click()
     } else {
         if (href == undefined) {
             window.alert(`SPFP: Арт не найден :(`)
-        } else if (similarity < min_similarity) {
+        } else if (similarity < $('#settings_min_similarity').val()) {
             window.alert(`SPFP: Процент сходства найденного арта слишком низкий:${similarity}%`)
         }
     }
@@ -473,7 +486,7 @@ function tags_helper_template() {
             <section class="input input_section input_tags">
                 <div class="input__box">
                     <input class="input__input input__input_carriage" id="art_danbooru_url" type="text"
-                           placeholder="Введите ссылку на Danbooru"
+                           placeholder="Введите ссылку на Danbooru или на страницу художника"
                            style="width: 100%;position: relative;left: 0px;">
                 </div>
             </section>

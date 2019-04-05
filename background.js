@@ -62,6 +62,9 @@ chrome.runtime.onMessage.addListener(
                 if (request['url'].includes('danbooru.donmai.us/posts/')) {
                     request['url'] += '.json'
                 }
+                else if(!request['url'].includes('iqdb')&&!request['url'].includes('danbooru.donmai.us')){
+                    request['url'] = 'https://danbooru.donmai.us/artists.json?search[url_matches]=' + request['url']
+                }
                 console.log(request['url'])
                 get(request['url']).then(
                     resolve => {
