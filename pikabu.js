@@ -542,7 +542,7 @@ function tags_helper_template() {
         </div>
         </div>
         </div>
-        <div id="art_settings_panel" hidden>
+        <div id="art_settings_panel" style="display:none;">
         <p>
         <label>Минимальный процент сходства:</label>
         <input type="text" id="settings_min_similarity">
