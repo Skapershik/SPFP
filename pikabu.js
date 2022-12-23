@@ -21,7 +21,7 @@ function main_function() {
         case 0:
             break;
         case 1:
-            $(tags_helper_template()).insertAfter('.story-editor__blocks')
+            $(tags_helper_template()).insertAfter('#pkb-story-edit-page')
             dynamic_content_controller()
             events_controller(page_type());
             break;
@@ -32,7 +32,10 @@ function main_function() {
 
 function events_controller(page) {
     events_remover('#art_tags_helper')
-    if (page == 1) {
+    if (page == 1) {        
+        $('#updateEventListenersButton').on('click', function (ev) {
+            dynamic_content_controller();
+        })
         $('#art_get_danbooru').on('click', function (ev) {
             let url = $('#art_danbooru_url').val();
             console.log(url);
@@ -48,7 +51,7 @@ function events_controller(page) {
                     $('#art_source').show();
                     let name = Object.keys(link_handler(response.source))[0]
                     let href = link_handler(response.source)[name]
-                    $('<a>', {href: href, text: name, style:'margin-right: 15px;'}).appendTo('#art_source');
+                    $('<a>', {href: href, text: name, style:'margin-right: 15px;', target:"_blank", rel:"noopener noreferrer nofollow"}).appendTo('#art_source');
                 }
                 if (response.tag_string_copyright) {
                     $('#art_copyrights').show();
@@ -175,12 +178,15 @@ function link_events() {
         if (timer) clearTimeout(timer);
         let link = this
         timer = setTimeout(function() {
-        $('[type="button"][data-role="text"]').click()
-        $('[data-name="desc"][role="textbox"] br').last().remove()
-        $(link).clone().off().removeAttr('style').appendTo($('[data-name="desc"][role="textbox"]').last().children())
-        $('[data-name="desc"][role="textbox"]').last().sendkeys(' ')
-        $('[data-name="desc"][role="textbox"]').last().blur()
-        $('.app__inner').click()
+        // $('[type="button"][data-role="text"]').click()
+        // $('[data-name="desc"][role="textbox"] br').last().remove()
+        $(link).clone().off().removeAttr('style').appendTo($('.pkb-rich-editor-node-paragraph__content--EakZZo_m').last())
+        const nodeList = document.querySelectorAll('.pkb-rich-editor-node-paragraph__content--EakZZo_m');
+        // nodeList[nodeList.length - 1].dispatchEvent(new Event('input'));
+        //$('[data-name="desc"][role="textbox"]').last().sendkeys(' ')
+        //$('[data-name="desc"][role="textbox"]').last().blur()
+        //$('.app__inner').click()
+
         }, 250);
         return false
     })
@@ -225,55 +231,64 @@ function tags_events() {
         if (timer) clearTimeout(timer);
         let tag = this.textContent
         timer = setTimeout(function() {
-            $('[data-role = "tags"] [type = "text"]').focus()
-            $('[data-role = "tags"] [type = "text"]').val(tag)
-            $('[data-role = "tags"] [type = "text"]').blur()
+            $('.pkb-input-tag-input__input--JcCQAMGY').focus()
+            $('.pkb-input-tag-input__input--JcCQAMGY').val(`${tag},`)
+            document.querySelector('.pkb-input-tag-input__input--JcCQAMGY').dispatchEvent(new Event('input'))
+            setTimeout(() => {
+                document.querySelector('.pkb-input-tag-input__input--JcCQAMGY').dispatchEvent(new InputEvent('input', { data: ' '}))
+                $('.pkb-input-tag-input__input--JcCQAMGY').blur()
+            })
         }, 250);
     })
     $('.tags__tag').on('click', function (ev) {
-        $('[data-role = "tags"] [type = "text"]').focus()
-        $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-        $('[data-role = "tags"] [type = "text"]').blur()
+        $('.pkb-input-tag-input__input--JcCQAMGY').focus()
+        $('.pkb-input-tag-input__input--JcCQAMGY').val(`${this.textContent},`)
+        document.querySelector('.pkb-input-tag-input__input--JcCQAMGY').dispatchEvent(new Event('input'))
+        setTimeout(() => {
+            document.querySelector('.pkb-input-tag-input__input--JcCQAMGY').dispatchEvent(new InputEvent('input', { data: ' '}))
+            $('.pkb-input-tag-input__input--JcCQAMGY').blur()
+        })
     })
     $('#art_tags_helper .tag').on('dblclick', function (ev) {
         clearTimeout(timer)
-        $('[name="title"]').focus()
-        $('[name="title"]').text($('[name="title"]').text()+this.textContent)
-        $('[name="title"]').blur()
+        $('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').focus()
+        $('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').text($('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').text()+this.textContent)
+        document.querySelector('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').dispatchEvent(new Event('input'))
+        $('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').blur()
         $('.app__inner').click()
     })
 }
 
 function dynamic_content_controller() {
     $('label:contains(" Опубликовать в сообществе")').off('click')
-    $('.story-editor-block__content img').off('click')
-    $('.story-editor-block__content canvas').off('click')
+    $('.pkb-rich-editor-node-image__host--lqG5PDpP img').off('click')
+    $('.pkb-rich-editor-node-image__host--lqG5PDpP canvas').off('click')
     $('input[type="file"]').off('change')
-    let interval_comm_tags = setInterval(function () {
-        console.log("interval_comm_tags", interval_comm_tags)
-        if ($('.community__tags.tags')[0] == undefined) return;
-        clearInterval(interval_comm_tags)
-        $('.tags__tag').on('click', function (ev) {
-            $('[data-role = "tags"] [type = "text"]').focus()
-            $('[data-role = "tags"] [type = "text"]').val(this.textContent)
-            $('[data-role = "tags"] [type = "text"]').blur()
-        })
-        $('.form__field .tags__tag').clone(true).appendTo('#art_community_tags')
-        duplicate_remover('#art_community_tags .tags__tag')
-        $('#art_community_tags').show()
-        $('label:contains(" Опубликовать в сообществе")').on('click', function () {
-            $(".community__tags.tags").remove();
-            $('#art_community_tags').hide()
-            $("#art_community_tags .tags__tag").remove()
-            dynamic_content_controller()
-        })
-    }, 1000)
+    // let interval_comm_tags = setInterval(function () {
+    //     console.log("interval_comm_tags", interval_comm_tags)
+    //     if ($('.community__tags.tags')[0] == undefined) return;
+    //     clearInterval(interval_comm_tags)
+    //     $('.tags__tag').on('click', function (ev) {
+    //         $('.pkb-input-tag-input__input--JcCQAMGY').focus()
+    //         $('.pkb-input-tag-input__input--JcCQAMGY').val(this.textContent)
+    //         $('.pkb-input-tag-input__input--JcCQAMGY').blur()
+    //     })
+    //     $('.form__field .tags__tag').clone(true).appendTo('#art_community_tags')
+    //     duplicate_remover('#art_community_tags .tags__tag')
+    //     $('#art_community_tags').show()
+    //     $('label:contains(" Опубликовать в сообществе")').on('click', function () {
+    //         $(".community__tags.tags").remove();
+    //         $('#art_community_tags').hide()
+    //         $("#art_community_tags .tags__tag").remove()
+    //         dynamic_content_controller()
+    //     })
+    // }, 1000)
     let interval_post = setInterval(function () {
         console.log("interval_post", interval_post)
-        if ($('.story-editor-block__content')[0] == undefined) return;
+        if ($('.pkb-rich-editor-node-image__host--lqG5PDpP')[0] == undefined) return;
         clearInterval(interval_post)
         setTimeout(function () {
-            $('.story-editor-block__content img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            $('.pkb-rich-editor-node-image__host--lqG5PDpP img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
                 $('#art_query_status').remove()
                 $('#art_tags_helper').children().hide()
                 $(status_update()).insertAfter('#art_tags_helper')
@@ -286,7 +301,7 @@ function dynamic_content_controller() {
                     process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
                 })
             })
-            $('.story-editor-block__content canvas').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            $('.pkb-rich-editor-node-image__host--lqG5PDpP canvas').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
                 $('#art_query_status').remove()
                 $('#art_tags_helper').children().hide()
                 $(status_update()).insertAfter('#art_tags_helper')
@@ -305,7 +320,7 @@ function dynamic_content_controller() {
                 })
             })
             $('input[type="file"]').on('change', dynamic_content_controller)
-        },250)
+        }, 250)
     }, 1000)
     function status_update() {
     return `<section style="text-align: center;" id="art_query_status">Делаем запрос на IQDB...<br>
@@ -435,9 +450,12 @@ function tags_helper_template() {
                            style="width: 100%;position: relative;left: 0px;">
                 </div>
             </section>
+            <div class="collapse-button collapse-button_active" id="updateEventListenersButton" style="height:auto; width:auto;text-align: center;margin-left: 0px; margin-top: 10px" >
+                Навесить события
+            </div>
             <div class="collapse-button collapse-button_active" id="art_get_danbooru" style="height:auto; width:auto;text-align: center;margin-left: 0px; margin-top: 10px" >
-            Сделать запрос
-        </div>
+                Сделать запрос
+            </div>
         
         <div id="art_main_panel" class="input" style="display: block">
         <p id="art_source" style="display:none">
