@@ -180,8 +180,8 @@ function link_events() {
         timer = setTimeout(function() {
         // $('[type="button"][data-role="text"]').click()
         // $('[data-name="desc"][role="textbox"] br').last().remove()
-        $(link).clone().off().removeAttr('style').appendTo($('.pkb-rich-editor-node-paragraph__content--EakZZo_m').last())
-        const nodeList = document.querySelectorAll('.pkb-rich-editor-node-paragraph__content--EakZZo_m');
+        $(link).clone().off().removeAttr('style').appendTo($('[class*="pkb-rich-editor-node-paragraph__content"]').last())
+        const nodeList = document.querySelectorAll('[class*="pkb-rich-editor-node-paragraph__content"]');
         // nodeList[nodeList.length - 1].dispatchEvent(new Event('input'));
         //$('[data-name="desc"][role="textbox"]').last().sendkeys(' ')
         //$('[data-name="desc"][role="textbox"]').last().blur()
@@ -231,47 +231,47 @@ function tags_events() {
         if (timer) clearTimeout(timer);
         let tag = this.textContent
         timer = setTimeout(function() {
-            $('.pkb-input-tag-input__input--JcCQAMGY').focus()
-            $('.pkb-input-tag-input__input--JcCQAMGY').val(`${tag},`)
-            document.querySelector('.pkb-input-tag-input__input--JcCQAMGY').dispatchEvent(new Event('input'))
+            $('[class*="pkb-input-tag-input__input"]').focus()
+            $('[class*="pkb-input-tag-input__input"]').val(`${tag},`)
+            document.querySelector('[class*="pkb-input-tag-input__input"]').dispatchEvent(new Event('input'))
             setTimeout(() => {
-                document.querySelector('.pkb-input-tag-input__input--JcCQAMGY').dispatchEvent(new InputEvent('input', { data: ' '}))
-                $('.pkb-input-tag-input__input--JcCQAMGY').blur()
+                document.querySelector('[class*="pkb-input-tag-input__input"]').dispatchEvent(new InputEvent('input', { data: ' '}))
+                $('[class*="pkb-input-tag-input__input"]').blur()
             })
         }, 250);
     })
     $('.tags__tag').on('click', function (ev) {
-        $('.pkb-input-tag-input__input--JcCQAMGY').focus()
-        $('.pkb-input-tag-input__input--JcCQAMGY').val(`${this.textContent},`)
-        document.querySelector('.pkb-input-tag-input__input--JcCQAMGY').dispatchEvent(new Event('input'))
+        $('[class*="pkb-input-tag-input__input"]').focus()
+        $('[class*="pkb-input-tag-input__input"]').val(`${this.textContent},`)
+        document.querySelector('[class*="pkb-input-tag-input__input"]').dispatchEvent(new Event('input'))
         setTimeout(() => {
-            document.querySelector('.pkb-input-tag-input__input--JcCQAMGY').dispatchEvent(new InputEvent('input', { data: ' '}))
-            $('.pkb-input-tag-input__input--JcCQAMGY').blur()
+            document.querySelector('[class*="pkb-input-tag-input__input"]').dispatchEvent(new InputEvent('input', { data: ' '}))
+            $('[class*="pkb-input-tag-input__input"]').blur()
         })
     })
     $('#art_tags_helper .tag').on('dblclick', function (ev) {
         clearTimeout(timer)
-        $('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').focus()
-        $('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').text($('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').text()+this.textContent)
-        document.querySelector('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').dispatchEvent(new Event('input'))
-        $('.pkb-rich-editor-title__content--eYj9FAsa .pkb-editable__content--TDMe9kvA').blur()
+        $('[class*="pkb-rich-editor-title__content"]').focus()
+        $('[class*="pkb-rich-editor-title__content"]').val($('[class*="pkb-rich-editor-title__content"]').val()+this.textContent)
+        document.querySelector('[class*="pkb-rich-editor-title__content"]').dispatchEvent(new Event('input'))
+        $('[class*="pkb-rich-editor-title__content"]').blur()
         $('.app__inner').click()
     })
 }
 
 function dynamic_content_controller() {
     $('label:contains(" Опубликовать в сообществе")').off('click')
-    $('.pkb-rich-editor-node-image__host--lqG5PDpP img').off('click')
-    $('.pkb-rich-editor-node-image__host--lqG5PDpP canvas').off('click')
+    $('[class*="pkb-rich-editor-node-image__host"] img').off('click')
+    $('[class*="pkb-rich-editor-node-image__host"] canvas').off('click')
     $('input[type="file"]').off('change')
     // let interval_comm_tags = setInterval(function () {
     //     console.log("interval_comm_tags", interval_comm_tags)
     //     if ($('.community__tags.tags')[0] == undefined) return;
     //     clearInterval(interval_comm_tags)
     //     $('.tags__tag').on('click', function (ev) {
-    //         $('.pkb-input-tag-input__input--JcCQAMGY').focus()
-    //         $('.pkb-input-tag-input__input--JcCQAMGY').val(this.textContent)
-    //         $('.pkb-input-tag-input__input--JcCQAMGY').blur()
+    //         $('[class*="pkb-input-tag-input__input"]').focus()
+    //         $('[class*="pkb-input-tag-input__input"]').val(this.textContent)
+    //         $('[class*="pkb-input-tag-input__input"]').blur()
     //     })
     //     $('.form__field .tags__tag').clone(true).appendTo('#art_community_tags')
     //     duplicate_remover('#art_community_tags .tags__tag')
@@ -285,10 +285,10 @@ function dynamic_content_controller() {
     // }, 1000)
     let interval_post = setInterval(function () {
         console.log("interval_post", interval_post)
-        if ($('.pkb-rich-editor-node-image__host--lqG5PDpP')[0] == undefined) return;
+        if ($('[class*="pkb-rich-editor-node-image__host"]')[0] == undefined) return;
         clearInterval(interval_post)
         setTimeout(function () {
-            $('.pkb-rich-editor-node-image__host--lqG5PDpP img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            $('[class*="pkb-rich-editor-node-image__host"] img').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
                 $('#art_query_status').remove()
                 $('#art_tags_helper').children().hide()
                 $(status_update()).insertAfter('#art_tags_helper')
@@ -301,7 +301,7 @@ function dynamic_content_controller() {
                     process_iqdb_response(new DOMParser().parseFromString(response, "text/html"))
                 })
             })
-            $('.pkb-rich-editor-node-image__host--lqG5PDpP canvas').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
+            $('[class*="pkb-rich-editor-node-image__host"] canvas').css({'cursor': 'pointer'}).attr('title', 'Нажмите для поиска изображения в IQDB').on('click', function () {
                 $('#art_query_status').remove()
                 $('#art_tags_helper').children().hide()
                 $(status_update()).insertAfter('#art_tags_helper')
